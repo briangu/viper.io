@@ -44,8 +44,8 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
       {
         _currentByteCount = 0;
         _inboundChannel = e.getChannel();
-
-        _chunkRelayProxy.init(this, e);
+        _chunkRelayProxy.init(this);
+        _currentMessage = m;
 
         List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
         encodings.remove(HttpHeaders.Values.CHUNKED);
@@ -53,8 +53,6 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
         {
           m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
         }
-
-        this._currentMessage = m;
       }
       else
       {
@@ -66,7 +64,8 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
     {
       final HttpChunk chunk = (HttpChunk) msg;
 
-      if (_maxContentLength != -1 && (_currentByteCount > (_maxContentLength - chunk.getContent().readableBytes()))) {
+      if (_maxContentLength != -1 && (_currentByteCount > (_maxContentLength - chunk.getContent().readableBytes())))
+      {
         _currentMessage.setHeader(HttpHeaders.Names.WARNING, "maxContentLength exceeded");
         _chunkRelayProxy.abort();
         _inboundChannel.setReadable(false);
@@ -129,6 +128,21 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
   public void onProxyPaused()
   {
     _inboundChannel.setReadable(false);
+  }
+
+  @Override
+  public void onProxyError()
+  {
+    if (_inboundChannel != null)
+    {
+      _inboundChannel.setReadable(false);
+    }
+    if (_currentMessage != null)
+    {
+      _currentMessage.setHeader(HttpHeaders.Names.WARNING, "failed to relay data");
+    }
+
+//    Channels.fire?(ctx, _currentMessage, e.getRemoteAddress());
   }
 }
 

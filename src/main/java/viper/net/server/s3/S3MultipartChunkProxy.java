@@ -2,24 +2,19 @@ package viper.net.server.s3;
 
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpChunk;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -34,55 +29,44 @@ import viper.net.server.HttpChunkRelayProxy;
 public class S3MultipartChunkProxy implements HttpChunkRelayProxy
 {
 
-  private final ClientSocketChannelFactory cf;
-  private final String remoteHost;
-  private final int remotePort;
+  private final ClientSocketChannelFactory _cf;
+  private final String _remoteHost;
+  private final int _remotePort;
+  private volatile Channel _s3Channel;
+  private int _chunkIndex;
 
-  final Object trafficLock = new Object();
-
-  HttpChunkRelayEventListener _listener;
-
-  private volatile Channel inboundChannel;
-  private volatile MessageEvent msg;
-
-  private volatile Channel outboundChannel;
+  final Object _trafficLock = new Object();
 
   private enum State
   {
     init,
-    appending,
+    relay,
     closed
   }
 
-  private State state = State.closed;
+  private State _state = State.closed;
+  private volatile HttpChunkRelayEventListener _listener;
+  private volatile MessageEvent _msg;
 
   public S3MultipartChunkProxy(ClientSocketChannelFactory cf,
                                String remoteHost,
-                               int remotePort,
-                               Channel inboundChannel,
-                               MessageEvent msg)
+                               int remotePort)
   {
-    this.cf = cf;
-    this.remoteHost = remoteHost;
-    this.remotePort = remotePort;
-    this.inboundChannel = inboundChannel;
-    this.msg = msg;
+    this._cf = cf;
+    this._remoteHost = remoteHost;
+    this._remotePort = remotePort;
   }
 
   private ChannelFuture connect(MessageEvent e)
   {
-    // Suspend incoming traffic until connected to the remote host.
-    final Channel inboundChannel = e.getChannel();
-    inboundChannel.setReadable(false);
-
     // Start the connection attempt.
-    ClientBootstrap cb = new ClientBootstrap(cf);
+    ClientBootstrap cb = new ClientBootstrap(_cf);
     cb.getPipeline().addLast("encoder", new RtspRequestEncoder());
     cb.getPipeline().addLast("decoder", new RtspResponseDecoder());
     cb.getPipeline().addLast("handler", new OutboundHandler(e.getChannel()));
-    ChannelFuture f = cb.connect(new InetSocketAddress(remoteHost, remotePort));
+    ChannelFuture f = cb.connect(new InetSocketAddress(_remoteHost, _remotePort));
 
-    outboundChannel = f.getChannel();
+    _s3Channel = f.getChannel();
     f.addListener(new ChannelFutureListener()
     {
       @Override
@@ -98,7 +82,6 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
         else
         {
           // Close the connection if the connection attempt has failed.
-          inboundChannel.close();
         }
       }
     });
@@ -106,14 +89,22 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
     return f;
   }
 
-  public void init(HttpChunkRelayEventListener listener, MessageEvent e)
+  @Override
+  public boolean isRelaying()
+  {
+    return _state != State.closed;
+  }
+
+  public void init(HttpChunkRelayEventListener listener)
     throws Exception
   {
-    state = State.init;
+    _state = State.init;
+    _listener = listener;
+    _chunkIndex = 1;
 
-    inboundChannel.setReadable(false);
+    _listener.onProxyPaused();
 
-    ChannelFuture f = connect(msg);
+    ChannelFuture f = connect(_msg);
     f.addListener(new ChannelFutureListener()
     {
       @Override
@@ -121,17 +112,22 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
         throws Exception
       {
         String objectName = "testobject";
-        String uri = String.format("%s:%s/%s?uploads", remoteHost, remotePort, objectName);
+        String uri = String.format("%s:%s/%s?uploads", _remoteHost, _remotePort, objectName);
         HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri);
         // set headers: http://docs.amazonwebservices.com/AmazonS3/latest/API/
-        outboundChannel.write(request);
+        _s3Channel.write(request);
       }
     });
   }
 
   public void appendChunk(HttpChunk chunk)
   {
+    // construct httprequest for chunk write
 
+    if (!_s3Channel.isWritable())
+    {
+      _listener.onProxyPaused();
+    }
   }
 
   public void complete(HttpChunk chunk)
@@ -147,11 +143,11 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
   private class OutboundHandler extends SimpleChannelUpstreamHandler
   {
 
-    private final Channel inboundChannel;
+    private volatile HttpChunkRelayEventListener _listener;
 
-    OutboundHandler(Channel inboundChannel)
+    OutboundHandler(HttpChunkRelayEventListener listener)
     {
-      this.inboundChannel = inboundChannel;
+      _listener = listener;
     }
 
     @Override
@@ -166,33 +162,33 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
 
       HttpResponse m = (HttpResponse)obj;
 
-      //System.out.println("<<< " + ChannelBuffers.hexDump(msg));
-      synchronized (trafficLock)
+      //System.out.println("<<< " + ChannelBuffers.hexDump(_msg));
+      synchronized (_trafficLock)
       {
         // stages: init, update parts, complete
-        if (state.equals(State.init))
+        if (_state.equals(State.init))
         {
           if (m.getStatus() == HttpResponseStatus.OK)
           {
-            inboundChannel.setReadable(true);
-            state = State.appending;
+            _listener.onProxyReady();
+            _state = State.relay;
           }
           else
           {
-            state = State.closed;
-            outboundChannel.close();
-            // TODO: notify calling class
+            _state = State.closed;
+            _s3Channel.close();
+            _listener.onProxyError();
             return;
           }
         }
-        else if (state.equals(State.appending))
+        else if (_state.equals(State.relay))
         {
-//        inboundChannel.write(msg);
-          // If inboundChannel is saturated, do not read until notified in
-          // HexDumpProxyInboundHandler.channelInterestChanged().
-          if (!inboundChannel.isWritable())
+          // TODO: extract chunk response (etag, etc.)
+
+          // If s3 channel is saturated, do not read until notified in
+          if (!_s3Channel.isWritable())
           {
-            e.getChannel().setReadable(false);
+            _listener.onProxyPaused();
           }
         }
       }
@@ -202,13 +198,13 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
     public void channelInterestChanged(ChannelHandlerContext ctx, ChannelStateEvent e)
       throws Exception
     {
-      // If outboundChannel is not saturated anymore, continue accepting
+      // If _s3Channel is not saturated anymore, continue accepting
       // the incoming traffic from the inboundChannel.
-      synchronized (trafficLock)
+      synchronized (_trafficLock)
       {
         if (e.getChannel().isWritable())
         {
-          inboundChannel.setReadable(true);
+          _listener.onProxyReady();
         }
       }
     }
@@ -217,7 +213,7 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
     public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
       throws Exception
     {
-      closeOnFlush(outboundChannel);
+      closeOnFlush(_s3Channel);
     }
 
     @Override
@@ -226,6 +222,7 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
     {
       e.getCause().printStackTrace();
       closeOnFlush(e.getChannel());
+      _listener.onProxyError();
     }
   }
 
