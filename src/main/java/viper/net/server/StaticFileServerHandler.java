@@ -40,44 +40,46 @@ import java.net.*;
  */
 public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
-  private String rootPath;
-  private String stripFromUri;
-  private int cacheMaxAge = -1;
-  private boolean fromClasspath = false;
-  private MimetypesFileTypeMap fileTypeMap = new MimetypesFileTypeMap();
+  private String _rootPath;
+  private String _stripFromUri;
+  private int _cacheMaxAge = -1;
+  private boolean _fromClasspath = false;
+  private MimetypesFileTypeMap _fileTypeMap = new MimetypesFileTypeMap();
 
   public StaticFileServerHandler(String path)
   {
     if (path.startsWith("classpath://"))
     {
-      fromClasspath = true;
-      //rootPath = getClass().getResource(path.replace("classpath://", "")).getPath();
-      rootPath = path.replace("classpath://", "");
-      if (rootPath.lastIndexOf("/") == rootPath.length() - 1) rootPath = rootPath.substring(0, rootPath.length() - 1);
+      _fromClasspath = true;
+      _rootPath = path.replace("classpath://", "");
+      if (_rootPath.lastIndexOf("/") == _rootPath.length() - 1)
+      {
+        _rootPath = _rootPath.substring(0, _rootPath.length() - 1);
+      }
     }
     else
     {
-      rootPath = path;
+      _rootPath = path;
     }
-    rootPath = rootPath.replace(File.separatorChar, '/');
+    _rootPath = _rootPath.replace(File.separatorChar, '/');
   }
 
   public StaticFileServerHandler(String path, String stripFromUri)
   {
     this(path);
-    this.stripFromUri = stripFromUri;
+    this._stripFromUri = stripFromUri;
   }
 
   public StaticFileServerHandler(String path, int cacheMaxAge)
   {
     this(path);
-    this.cacheMaxAge = cacheMaxAge;
+    this._cacheMaxAge = cacheMaxAge;
   }
 
   public StaticFileServerHandler(String path, int cacheMaxAge, String stripFromUri)
   {
     this(path, cacheMaxAge);
-    this.stripFromUri = stripFromUri;
+    this._stripFromUri = stripFromUri;
   }
 
   @Override
@@ -92,9 +94,9 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
 
     String uri = request.getUri();
-    if (stripFromUri != null)
+    if (_stripFromUri != null)
     {
-      uri = uri.replaceFirst(stripFromUri, "");
+      uri = uri.replaceFirst(_stripFromUri, "");
     }
 
     final String path = sanitizeUri(uri);
@@ -111,11 +113,23 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       return;
     }
 
-    String contentType = fileTypeMap.getContentType(path);
+    String contentType;
+
+    if (path.endsWith(".js"))
+    {
+      contentType = "text/javascript";
+    }
+    else if (path.endsWith(".css"))
+    {
+      contentType = "text/css";
+    }
+    else {
+      contentType = _fileTypeMap.getContentType(path);
+    }
 
     CachableHttpResponse response = new CachableHttpResponse(HTTP_1_1, OK);
     response.setRequestUri(request.getUri());
-    response.setCacheMaxAge(cacheMaxAge);
+    response.setCacheMaxAge(_cacheMaxAge);
     response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentType);
     setContentLength(response, contentInfo.content.readableBytes());
 
@@ -152,9 +166,9 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     {
       File file;
 
-      if (fromClasspath)
+      if (_fromClasspath)
       {
-        URL url = this.getClass().getResource(rootPath + path);
+        URL url = this.getClass().getResource(_rootPath + path);
         if (url == null)
         {
           return null;
@@ -163,7 +177,12 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       }
       else
       {
-        file = new File(rootPath + path);
+        file = new File(_rootPath + path);
+      }
+
+      if (!file.exists())
+      {
+        return null;
       }
 
       fc = new RandomAccessFile(file, "r").getChannel();

@@ -83,7 +83,7 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
     pipeline.addLast("aggregator", new HttpChunkRelayHandler(proxy, _maxContentLength));
     pipeline.addLast("encoder", new HttpResponseEncoder());
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    pipeline.addLast("static", new StaticFileServerHandler("classpath://public"));
+    pipeline.addLast("static", new StaticFileServerHandler("src/main/resources/public"));
 
     return pipeline;
   }
