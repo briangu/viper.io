@@ -266,11 +266,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     QueryStringDecoder decoder = new QueryStringDecoder(uri);
     uri = decoder.getPath();
 
-    if (uri.equals("/"))
-    {
-      uri += "index.html";
-    }
-
     return uri;
   }
 
