@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * @author Carl Bystršm
+ * @author Carl Bystrm
  */
 @ChannelPipelineCoverage("all")
 public class NettyHandlerContainer extends SimpleChannelUpstreamHandler

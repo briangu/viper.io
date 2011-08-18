@@ -13,19 +13,20 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package viper.net;
+package viper.net.app.ws;
 
-
-import static org.jboss.netty.channel.Channels.*;
 
 import java.util.Set;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import viper.net.common.HttpResponseLoggingHandler;
 import viper.net.server.ws.WebSocketServerHandler;
+
+import static org.jboss.netty.channel.Channels.pipeline;
 
 
 /**
@@ -38,30 +39,27 @@ public class WebSocketServerPipelineFactory implements ChannelPipelineFactory
 
   Set<ChannelHandlerContext> _listeners;
 
-  private final ClientSocketChannelFactory cf;
-  private final String remoteHost;
-  private final int remotePort;
   private final int maxContentLength;
 
-
-  public WebSocketServerPipelineFactory(ClientSocketChannelFactory cf, String remoteHost, int remotePort, int maxContentLength, Set<ChannelHandlerContext> listeners)
+  public WebSocketServerPipelineFactory(
+    int maxContentLength,
+    Set<ChannelHandlerContext> listeners)
   {
     _listeners = listeners;
-    this.cf = cf;
-    this.remoteHost = remoteHost;
-    this.remotePort = remotePort;
     this.maxContentLength = maxContentLength;
   }
 
   public ChannelPipeline getPipeline()
     throws Exception
   {
-    // Create a default pipeline implementation.
+
     ChannelPipeline pipeline = pipeline();
+    pipeline.addLast("log", new HttpResponseLoggingHandler());
     pipeline.addLast("decoder", new HttpRequestDecoder());
-    pipeline.addLast("aggregator", new StreamChunkAggregator(cf, remoteHost, remotePort, maxContentLength));
+    pipeline.addLast("aggregator", new HttpChunkAggregator(maxContentLength));
     pipeline.addLast("encoder", new HttpResponseEncoder());
     pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
+
     return pipeline;
   }
 }

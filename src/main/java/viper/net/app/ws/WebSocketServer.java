@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package viper.net;
+package viper.net.app.ws;
 
 
 import java.net.InetSocketAddress;
@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
@@ -62,8 +61,8 @@ public class WebSocketServer
 
     String remoteHost = "nettytest__31415923141592.s3.amazonaws.com";
 
-    HttpClientPipelineFactory factory =
-      new HttpClientPipelineFactory(cf, remoteHost, 80, 1024*1024*1024, listeners);
+    WebSocketServerPipelineFactory factory =
+      new WebSocketServerPipelineFactory(1024*1024*1024, listeners);
 
     // Set up the event pipeline factory.
     server._bootstrap.setPipelineFactory(factory);

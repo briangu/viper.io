@@ -1,5 +1,6 @@
 package viper.net.server;
 
+import java.util.UUID;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.HttpChunk;
@@ -44,7 +45,8 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
       {
         _currentByteCount = 0;
         _inboundChannel = e.getChannel();
-        _chunkRelayProxy.init(this);
+        // TODO: GET FILENAME FROM POST
+        _chunkRelayProxy.init(this, UUID.randomUUID().toString());
         _currentMessage = m;
 
         List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);

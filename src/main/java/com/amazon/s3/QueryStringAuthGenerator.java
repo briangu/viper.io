@@ -203,7 +203,27 @@ public class QueryStringAuthGenerator {
         return buffer.toString();
     }
 
-    private String generateURL(String method, String bucketName, String key, Map pathArgs, Map headers) 
+    public String initMultipartUpload(String bucket, String key)
+    {
+      return null;
+    }
+
+    public String uploadPart(String bucket, String key, S3Object object)
+    {
+      return null;
+    }
+
+    public String completeMultipartUpload(String bucket, String key, S3Object object)
+    {
+      return null;
+    }
+
+    public String abortMultipartUpload(String bucket, String key)
+    {
+      return null;
+    }
+
+    private String generateURL(String method, String bucketName, String key, Map pathArgs, Map headers)
     {
         long expires = 0L;
         if (this.expiresIn != null) {

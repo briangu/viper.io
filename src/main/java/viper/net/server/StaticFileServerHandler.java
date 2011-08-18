@@ -91,7 +91,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
             return;
         }
 
-
         ChannelBuffer content = getFileContent(path);
         if (content == null) {
             sendError(ctx, NOT_FOUND);
