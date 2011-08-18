@@ -1,12 +1,11 @@
 package viper.net.server;
 
 
-import java.util.EventListener;
+import org.jboss.netty.channel.Channel;
 
 
-public interface HttpChunkRelayEventListener extends EventListener
+public interface HttpChunkRelayEventListener
 {
-  void onProxyReady();
-  void onProxyPaused();
-  void onProxyError();
+  void onError(Channel clientChannel);
+  void onCompleted(Channel clientChannel);
 }

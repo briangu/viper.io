@@ -3,14 +3,19 @@ package viper.net.server;
 import java.util.UUID;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import java.util.List;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.HttpVersion;
+import org.json.JSONObject;
 
 
-public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implements HttpChunkRelayEventListener
+public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implements HttpChunkProxyEventListener
 {
 
   private volatile HttpMessage _currentMessage;
@@ -18,12 +23,15 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
   private final int _maxContentLength;
   private int _currentByteCount;
   private final HttpChunkRelayProxy _chunkRelayProxy;
+  private final HttpChunkRelayEventListener _relayListener;
 
-  public HttpChunkRelayHandler(
-      HttpChunkRelayProxy chunkRelayProxy,
-      int maxContentLength)
+  public HttpChunkProxyHandler(
+    HttpChunkRelayProxy chunkRelayProxy,
+    HttpChunkRelayEventListener relayListener,
+    int maxContentLength)
   {
     _chunkRelayProxy = chunkRelayProxy;
+    _relayListener = relayListener;
     _maxContentLength = maxContentLength;
   }
 
@@ -45,8 +53,15 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
       {
         _currentByteCount = 0;
         _inboundChannel = e.getChannel();
-        // TODO: GET FILENAME FROM POST
-        _chunkRelayProxy.init(this, UUID.randomUUID().toString());
+
+        long contentLength =
+          m.containsHeader("Content-Length")
+            ? contentLength = Long.parseLong(m.getHeader("Content-Length"))
+            : -1;
+
+        String filename = m.getHeader("X-File-Name");
+
+        _chunkRelayProxy.init(this, UUID.randomUUID().toString(), contentLength);
         _currentMessage = m;
 
         List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
@@ -71,6 +86,7 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
         _currentMessage.setHeader(HttpHeaders.Names.WARNING, "maxContentLength exceeded");
         _chunkRelayProxy.abort();
         _inboundChannel.setReadable(false);
+        _relayListener.onError(_inboundChannel);
       }
       else
       {
@@ -83,7 +99,7 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
         else
         {
           _chunkRelayProxy.complete(chunk);
-          Channels.fireMessageReceived(ctx, _currentMessage, e.getRemoteAddress());
+          _relayListener.onCompleted(_inboundChannel);
         }
       }
     }
@@ -94,6 +110,7 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
     throws Exception
   {
     closeOnFlush(e.getChannel());
+
     if (_chunkRelayProxy.isRelaying())
     {
       _chunkRelayProxy.abort();
@@ -106,6 +123,9 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
   {
     e.getCause().printStackTrace();
     closeOnFlush(e.getChannel());
+
+    _relayListener.onError(_inboundChannel);
+
     if (_chunkRelayProxy.isRelaying())
     {
       _chunkRelayProxy.abort();
@@ -130,6 +150,12 @@ public class HttpChunkRelayHandler extends SimpleChannelUpstreamHandler implemen
   public void onProxyPaused()
   {
     _inboundChannel.setReadable(false);
+  }
+
+  @Override
+  public void onProxyCompleted()
+  {
+
   }
 
   @Override

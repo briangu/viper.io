@@ -33,7 +33,6 @@ public class CacheHandler extends SimpleChannelHandler {
                 if (ce.expires > System.currentTimeMillis())
                 {
                     ChannelFuture f = e.getChannel().write(ce.content);
-                    f.addListener(ChannelFutureListener.CLOSE);
                     if (!HttpHeaders.isKeepAlive(request)) {
                         f.addListener(ChannelFutureListener.CLOSE);
                     }

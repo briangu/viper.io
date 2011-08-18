@@ -24,11 +24,14 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import viper.net.common.HttpResponseLoggingHandler;
-import viper.net.server.HttpChunkRelayHandler;
+import viper.net.server.FileChunkProxy;
+import viper.net.server.FileUploadChunkRelayEventListener;
+import viper.net.server.HttpChunkProxyEventListener;
+import viper.net.server.HttpChunkProxyHandler;
+import viper.net.server.HttpChunkRelayProxy;
 import viper.net.server.StaticFileServerHandler;
-import viper.net.server.s3.S3MultipartChunkProxy;
-import viper.net.server.ws.WebSocketServerHandler;
+import viper.net.server.s3.S3ChunkProxy;
+import viper.net.server.s3.S3StandardChunkProxy;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -70,20 +73,27 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
   public ChannelPipeline getPipeline()
     throws Exception
   {
-    S3MultipartChunkProxy proxy =
-      new S3MultipartChunkProxy(
+    HttpChunkRelayProxy proxy;
+
+    String rootPath = "src/main/resources/public";
+    proxy = new FileChunkProxy(rootPath + "/uploads");
+
+    proxy =
+      new S3StandardChunkProxy(
         _authGenerator,
         _bucketName,
         _cf,
         _remoteHost,
         _remotePort);
 
+    FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
+
     ChannelPipeline pipeline = pipeline();
     pipeline.addLast("decoder", new HttpRequestDecoder());
-    pipeline.addLast("aggregator", new HttpChunkRelayHandler(proxy, _maxContentLength));
+    pipeline.addLast("aggregator", new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
     pipeline.addLast("encoder", new HttpResponseEncoder());
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    pipeline.addLast("static", new StaticFileServerHandler("src/main/resources/public"));
+    pipeline.addLast("static", new StaticFileServerHandler(rootPath));
 
     return pipeline;
   }

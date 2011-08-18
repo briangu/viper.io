@@ -76,7 +76,7 @@ public class PhotoServer
         cf,
         remoteHost,
         80,
-        1024*1024*1024,
+        (1024*1024)*1024,
         listeners);
 
     // Set up the event pipeline factory.
