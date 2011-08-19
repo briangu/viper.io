@@ -1,4 +1,4 @@
-package viper.net.server;
+package viper.net.server.chunkproxy;
 
 
 import java.util.EventListener;

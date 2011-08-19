@@ -1,18 +1,22 @@
-package viper.net.server;
+package viper.net.server.chunkproxy;
 
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
-
-import java.util.List;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.HttpVersion;
-import org.json.JSONObject;
+import viper.net.server.Util;
 
 
 public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implements HttpChunkProxyEventListener
@@ -51,6 +55,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
       HttpMessage m = (HttpMessage) msg;
       if (m.isChunked())
       {
+        _currentMessage = m;
         _currentByteCount = 0;
         _inboundChannel = e.getChannel();
 
@@ -59,17 +64,33 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
             ? contentLength = Long.parseLong(m.getHeader("Content-Length"))
             : -1;
 
-        String filename = m.getHeader("X-File-Name");
+        String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
+        String contentType = Util.getContentType(filename);
 
-        _chunkRelayProxy.init(this, UUID.randomUUID().toString(), contentLength);
-        _currentMessage = m;
+        _chunkRelayProxy.init(
+          this,
+          filename,
+          contentLength,
+          contentType);
 
+/*
         List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
         encodings.remove(HttpHeaders.Values.CHUNKED);
         if (encodings.isEmpty())
         {
           m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
         }
+*/
+
+        Map<String, String> props = new HashMap<String, String>();
+        if (filename != null)
+        {
+          props.put("X-File-Name", filename);
+        }
+        props.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(contentLength));
+        props.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
+
+        _relayListener.onStart(props);
       }
       else
       {

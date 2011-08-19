@@ -23,7 +23,6 @@ import java.util.ArrayList;
 /**
  * @author Carl Bystrm
  */
-@ChannelPipelineCoverage("all")
 public class NettyHandlerContainer extends SimpleChannelUpstreamHandler
 {
 	public static final String PROPERTY_BASE_URI = "com.sun.jersey.server.impl.container.netty.baseUri";

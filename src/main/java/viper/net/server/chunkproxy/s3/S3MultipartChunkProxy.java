@@ -1,10 +1,12 @@
-package viper.net.server.s3;
+package viper.net.server.chunkproxy.s3;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import com.amazon.s3.S3Object;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -19,7 +21,6 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpChunk;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -28,11 +29,11 @@ import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.rtsp.RtspRequestEncoder;
 import org.jboss.netty.handler.codec.rtsp.RtspResponseDecoder;
 import viper.net.common.HttpResponseLoggingHandler;
-import viper.net.server.HttpChunkProxyEventListener;
-import viper.net.server.HttpChunkRelayProxy;
+import viper.net.server.chunkproxy.HttpChunkProxyEventListener;
+import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 
 
-public class S3StandardChunkProxy implements HttpChunkRelayProxy
+public class S3MultipartChunkProxy implements HttpChunkRelayProxy
 {
 
   private final QueryStringAuthGenerator _s3AuthGenerator;
@@ -41,30 +42,31 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
 
   private long _objectSize;
 
+  private List<String> _multipartEtags;
+
   private final ClientSocketChannelFactory _cf;
   private final String _remoteHost;
   private final int _remotePort;
   private volatile Channel _s3Channel;
+  private int _chunkIndex;
 
   final Object _trafficLock = new Object();
 
   private enum State
   {
     init,
-    connected,
     relay,
-    complete,
     closed
   }
 
   private State _state = State.closed;
   private volatile HttpChunkProxyEventListener _listener;
 
-  public S3StandardChunkProxy(QueryStringAuthGenerator s3AuthGenerator,
-                              String bucketName,
-                              ClientSocketChannelFactory cf,
-                              String remoteHost,
-                              int remotePort)
+  public S3MultipartChunkProxy(QueryStringAuthGenerator s3AuthGenerator,
+                               String bucketName,
+                               ClientSocketChannelFactory cf,
+                               String remoteHost,
+                               int remotePort)
   {
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
@@ -91,7 +93,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
       {
         if (future.isSuccess())
         {
-          _state = State.connected;
           _listener.onProxyReady();
         }
         else
@@ -108,61 +109,45 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   @Override
   public boolean isRelaying()
   {
-    return _state == State.relay;
+    return _state != State.closed;
   }
 
   @Override
-  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize)
+  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize, String contentType)
     throws Exception
   {
     _state = State.init;
     _listener = listener;
-    _bucketKey = objectName;
-    _objectSize = objectSize;
+    _chunkIndex = 1;
 
     _listener.onProxyPaused();
 
-    connect();
+    _bucketKey = objectName;
+    _multipartEtags = new ArrayList<String>();
+
+    ChannelFuture f = connect();
+    f.addListener(new ChannelFutureListener()
+    {
+      @Override
+      public void operationComplete(ChannelFuture channelFuture)
+        throws Exception
+      {
+        String uri = _s3AuthGenerator.initMultipartUpload(_bucketName, _bucketKey);
+        HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri);
+        _s3Channel.write(request);
+      }
+    });
   }
 
   @Override
   public void appendChunk(HttpChunk chunk)
   {
-    if (_state.equals(State.connected))
-    {
-      Map<String, String[]> meta = new HashMap<String, String[]>();
-      Map<String, String[]> headers = new HashMap<String, String[]>();
-      S3Object object = new S3Object(null, meta);
-      String uri = _s3AuthGenerator.put(_bucketName, _bucketKey, object, headers);
-      HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.PUT, uri);
-      request.setHeader(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(_objectSize));
-      request.setContent(chunk.getContent());
-
-      _listener.onProxyPaused();
-      ChannelFuture f = _s3Channel.write(request);
-      f.addListener(new ChannelFutureListener()
-      {
-        @Override
-        public void operationComplete(ChannelFuture channelFuture)
-          throws Exception
-        {
-          if (channelFuture.isSuccess())
-          {
-            _state = State.relay;
-            _listener.onProxyReady();
-          }
-          else
-          {
-            _listener.onProxyError();
-            _s3Channel.close();
-          }
-        }
-      });
-    }
-    else if (_state.equals(State.relay))
-    {
-      _s3Channel.write(chunk.getContent());
-    }
+    Map<String, String[]> meta = new HashMap<String, String[]>();
+    S3Object object = new S3Object(null, meta);
+    String uri = _s3AuthGenerator.uploadPart(_bucketName, _bucketKey, object);
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri);
+    request.setContent(chunk.getContent());
+    _s3Channel.write(request);
 
     if (!_s3Channel.isWritable())
     {
@@ -173,15 +158,20 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   @Override
   public void complete(HttpChunk chunk)
   {
-    _state = State.complete;
-    _s3Channel.write(chunk.getContent());
+    Map<String, String[]> meta = new HashMap<String, String[]>();
+    S3Object object = new S3Object(null, meta);
+    String uri = _s3AuthGenerator.completeMultipartUpload(_bucketName, _bucketKey, object);
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri);
+    request.setContent(chunk.getContent());
+    _s3Channel.write(request);
   }
 
   @Override
   public void abort()
   {
-    _state = State.closed;
-    _s3Channel.close();
+    String uri = _s3AuthGenerator.abortMultipartUpload(_bucketName, _bucketKey);
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri);
+    _s3Channel.write(request);
   }
 
   private class S3ResponseHandler extends SimpleChannelUpstreamHandler
@@ -206,8 +196,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
 
       HttpResponse m = (HttpResponse)obj;
 
-      System.out.println("response in current state: " + _state);
-
       synchronized (_trafficLock)
       {
         if (_state.equals(State.init))
@@ -224,11 +212,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
             _listener.onProxyError();
           }
         }
-        else if (_state.equals(State.connected))
-        {
-          _state = State.relay;
-          _listener.onProxyReady();
-        }
         else if (_state.equals(State.relay))
         {
           if (m.getStatus() == HttpResponseStatus.OK)
@@ -244,13 +227,9 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
             _listener.onProxyError();
           }
         }
-        else if (_state.equals(State.relay))
-        {
-          _s3Channel.close();
-        }
         else
         {
-          System.out.println("unhandled response @ " + _state);
+          // ignore
         }
       }
     }

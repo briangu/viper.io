@@ -1,4 +1,4 @@
-package viper.net.server;
+package viper.net.server.chunkproxy;
 
 
 import java.io.File;
@@ -44,7 +44,7 @@ public class FileChunkProxy implements HttpChunkRelayProxy
   }
 
   @Override
-  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize)
+  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize, String contentType)
     throws Exception
   {
     if (!_state.equals(State.closed))

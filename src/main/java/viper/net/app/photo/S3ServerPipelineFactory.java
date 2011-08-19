@@ -24,14 +24,12 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import viper.net.server.FileChunkProxy;
-import viper.net.server.FileUploadChunkRelayEventListener;
-import viper.net.server.HttpChunkProxyEventListener;
-import viper.net.server.HttpChunkProxyHandler;
-import viper.net.server.HttpChunkRelayProxy;
 import viper.net.server.StaticFileServerHandler;
-import viper.net.server.s3.S3ChunkProxy;
-import viper.net.server.s3.S3StandardChunkProxy;
+import viper.net.server.chunkproxy.FileChunkProxy;
+import viper.net.server.chunkproxy.FileUploadChunkRelayEventListener;
+import viper.net.server.chunkproxy.HttpChunkProxyHandler;
+import viper.net.server.chunkproxy.HttpChunkRelayProxy;
+import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 

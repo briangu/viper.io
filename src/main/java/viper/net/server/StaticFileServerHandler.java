@@ -129,19 +129,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       return;
     }
 
-    String contentType;
-
-    if (path.endsWith(".js"))
-    {
-      contentType = "text/javascript";
-    }
-    else if (path.endsWith(".css"))
-    {
-      contentType = "text/css";
-    }
-    else {
-      contentType = _fileTypeMap.getContentType(path);
-    }
+    String contentType = Util.getContentType(path);
 
     CachableHttpResponse response = new CachableHttpResponse(HTTP_1_1, OK);
     response.setRequestUri(request.getUri());

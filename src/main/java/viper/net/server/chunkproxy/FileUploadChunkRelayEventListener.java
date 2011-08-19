@@ -1,7 +1,8 @@
-package viper.net.server;
+package viper.net.server.chunkproxy;
 
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -15,6 +16,8 @@ import org.json.JSONObject;
 
 public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventListener
 {
+  Map<String, String> _props;
+
   public void onError(Channel clientChannel)
   {
     sendResponse(clientChannel, false);
@@ -25,6 +28,12 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
     sendResponse(clientChannel, true);
   }
 
+  @Override
+  public void onStart(Map<String, String> props)
+  {
+    _props = props;
+  }
+
   private void sendResponse(Channel clientChannel, boolean success)
   {
     try
@@ -32,6 +41,10 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
       JSONObject jsonResponse = new JSONObject();
       jsonResponse.put("success", Boolean.toString(success));
+      if (_props.containsKey("X-File-Name"))
+      {
+        jsonResponse.put("filename", _props.get("X-File-Name"));
+      }
       response.setContent(ChannelBuffers.wrappedBuffer(jsonResponse.toString(2).getBytes("UTF-8")));
       clientChannel.write(response).addListener(ChannelFutureListener.CLOSE);
     }
