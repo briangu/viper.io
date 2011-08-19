@@ -274,6 +274,8 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
    */
   static void closeOnFlush(Channel ch)
   {
+    if (ch == null) return;
+
     if (ch.isConnected())
     {
       ch.write(ChannelBuffers.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);

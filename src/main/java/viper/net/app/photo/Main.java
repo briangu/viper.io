@@ -9,6 +9,6 @@ public class Main
     String awsSecret = args[1];
     String bucketName = args[2];
 
-    PhotoServer photoServer = PhotoServer.create(8080, awsId, awsSecret, bucketName);
+    PhotoServer photoServer = PhotoServer.create(18080, awsId, awsSecret, bucketName);
   }
 }
