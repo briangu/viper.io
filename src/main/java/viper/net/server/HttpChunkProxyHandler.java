@@ -109,12 +109,12 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
   public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
     throws Exception
   {
-    closeOnFlush(e.getChannel());
-
     if (_chunkRelayProxy.isRelaying())
     {
       _chunkRelayProxy.abort();
     }
+
+    closeOnFlush(e.getChannel());
   }
 
   @Override
@@ -122,7 +122,6 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
     throws Exception
   {
     e.getCause().printStackTrace();
-    closeOnFlush(e.getChannel());
 
     _relayListener.onError(_inboundChannel);
 
@@ -130,6 +129,8 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
     {
       _chunkRelayProxy.abort();
     }
+
+    closeOnFlush(e.getChannel());
   }
 
   static void closeOnFlush(Channel ch)
@@ -169,8 +170,6 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
     {
       _currentMessage.setHeader(HttpHeaders.Names.WARNING, "failed to relay data");
     }
-
-//    Channels.fire?(ctx, _currentMessage, e.getRemoteAddress());
   }
 }
 

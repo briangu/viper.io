@@ -108,7 +108,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   @Override
   public boolean isRelaying()
   {
-    return _state != State.closed;
+    return _state == State.relay;
   }
 
   @Override
@@ -132,11 +132,10 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     {
       Map<String, String[]> meta = new HashMap<String, String[]>();
       Map<String, String[]> headers = new HashMap<String, String[]>();
-      headers.put(HttpHeaders.Names.CONTENT_LENGTH, new String[] { new Long(_objectSize).toString() });
       S3Object object = new S3Object(null, meta);
       String uri = _s3AuthGenerator.put(_bucketName, _bucketKey, object, headers);
       HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.PUT, uri);
-      request.setHeader(HttpHeaders.Names.CONTENT_LENGTH, new Long(_objectSize).toString());
+      request.setHeader(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(_objectSize));
       request.setContent(chunk.getContent());
 
       _listener.onProxyPaused();
@@ -163,10 +162,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     else if (_state.equals(State.relay))
     {
       _s3Channel.write(chunk.getContent());
-      if (!_s3Channel.isWritable())
-      {
-        _listener.onProxyPaused();
-      }
     }
 
     if (!_s3Channel.isWritable())
