@@ -4,12 +4,14 @@ package viper.net.server;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.UUID;
 import javax.activation.MimetypesFileTypeMap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.base64.Base64;
 import org.jboss.netty.handler.codec.base64.Base64Dialect;
+import org.jboss.netty.util.CharsetUtil;
 
 
 /**
@@ -50,7 +52,7 @@ public class Util
     byte[] data = UUIDtoByteArray(uuid);
     ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(data);
     ChannelBuffer encoded = Base64.encode(buffer, Base64Dialect.URL_SAFE);
-    return encoded.toString();
+    return encoded.toString(CharsetUtil.US_ASCII).replace("=", "");
   }
 
   public static byte[] UUIDtoByteArray(UUID uuid)
@@ -65,6 +67,7 @@ public class Util
       dos.writeLong(uuid.getMostSignificantBits());
       dos.flush();
       byte[] data = baos.toByteArray();
+      return data;
     }
     catch (IOException e)
     {
