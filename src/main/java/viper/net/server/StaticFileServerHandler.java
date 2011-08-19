@@ -44,7 +44,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private String _stripFromUri;
   private int _cacheMaxAge = -1;
   private boolean _fromClasspath = false;
-  private MimetypesFileTypeMap _fileTypeMap = new MimetypesFileTypeMap();
+
   private final File _indexFile;
 
   // TODO: add support for index.htm
@@ -66,18 +66,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
     _rootPath = _rootPath.replace(File.separatorChar, '/');
 
-    File foundIndex = null;
-    final String[] defaultFiles = new String[] { "index.html", "index.htm" };
-    for (String defaultFile : defaultFiles)
-    {
-      File tmpFile = new File(_rootPath + path + defaultFile);
-      if (tmpFile.exists())
-      {
-        foundIndex = tmpFile;
-        break;
-      }
-    }
-    _indexFile = foundIndex;
+    _indexFile = getIndexFile(_rootPath);
   }
 
   public StaticFileServerHandler(String path, String stripFromUri)
@@ -96,6 +85,25 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   {
     this(path, cacheMaxAge);
     this._stripFromUri = stripFromUri;
+  }
+
+  private static File getIndexFile(String rootPath)
+  {
+    File foundIndex = null;
+
+    final String[] defaultFiles = new String[] { "index.html", "index.htm" };
+
+    for (String defaultFile : defaultFiles)
+    {
+      File tmpFile = new File(rootPath + File.pathSeparatorChar + defaultFile);
+      if (tmpFile.exists())
+      {
+        foundIndex = tmpFile;
+        break;
+      }
+    }
+
+    return foundIndex;
   }
 
   @Override

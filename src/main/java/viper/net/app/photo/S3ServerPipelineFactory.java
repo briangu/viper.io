@@ -30,6 +30,7 @@ import viper.net.server.chunkproxy.FileUploadChunkRelayEventListener;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
+import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -91,6 +92,7 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
     pipeline.addLast("aggregator", new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
     pipeline.addLast("encoder", new HttpResponseEncoder());
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
+    pipeline.addLast("s3static", new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort, "/uploads/"));
     pipeline.addLast("static", new StaticFileServerHandler(rootPath));
 
     return pipeline;

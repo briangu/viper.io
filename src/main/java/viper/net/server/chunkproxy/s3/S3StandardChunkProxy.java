@@ -25,7 +25,9 @@ import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpRequestEncoder;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.rtsp.RtspRequestEncoder;
@@ -49,8 +51,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   private final String _remoteHost;
   private final int _remotePort;
   private volatile Channel _s3Channel;
-
-  final Object _trafficLock = new Object();
 
   private enum State
   {
@@ -77,12 +77,11 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     _remotePort = remotePort;
   }
 
-  private ChannelFuture connect()
+  private void connect()
   {
     ClientBootstrap cb = new ClientBootstrap(_cf);
-    cb.getPipeline().addLast("log", new HttpResponseLoggingHandler());
-    cb.getPipeline().addLast("encoder", new RtspRequestEncoder());
-    cb.getPipeline().addLast("decoder", new RtspResponseDecoder());
+    cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
+    cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_listener));
     ChannelFuture f = cb.connect(new InetSocketAddress(_remoteHost, _remotePort));
 
@@ -101,12 +100,10 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
         else
         {
           _listener.onProxyError();
-          _s3Channel.close();
+          closeS3Channel();
         }
       }
     });
-
-    return f;
   }
 
   @Override
@@ -170,7 +167,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
           else
           {
             _listener.onProxyError();
-            _s3Channel.close();
+            closeS3Channel();
           }
         }
       });
@@ -224,44 +221,10 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
 
       System.out.println("response in current state: " + _state);
 
-      synchronized (_trafficLock)
+      if (!m.getStatus().equals(HttpResponseStatus.OK))
       {
-        if (_state.equals(State.init))
-        {
-          if (m.getStatus() == HttpResponseStatus.OK)
-          {
-            _listener.onProxyReady();
-            _state = State.relay;
-          }
-          else
-          {
-            _state = State.closed;
-            _s3Channel.close();
-            _listener.onProxyError();
-          }
-        }
-        else if (_state.equals(State.connected))
-        {
-          _state = State.relay;
-          _listener.onProxyReady();
-        }
-        else if (_state.equals(State.relay))
-        {
-          if (m.getStatus() == HttpResponseStatus.OK)
-          {
-            // TODO: process response
-          }
-          else
-          {
-            _state = State.closed;
-            _s3Channel.close();
-            _listener.onProxyError();
-          }
-        }
-        else
-        {
-          System.out.println("unhandled response @ " + _state);
-        }
+        closeS3Channel();
+        _listener.onProxyError();
       }
     }
 
@@ -271,12 +234,9 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     {
       // If _s3Channel is not saturated anymore, continue accepting
       // the incoming traffic from the inboundChannel.
-      synchronized (_trafficLock)
+      if (e.getChannel().isWritable())
       {
-        if (e.getChannel().isWritable())
-        {
-          _listener.onProxyReady();
-        }
+        _listener.onProxyReady();
       }
     }
 
@@ -285,6 +245,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
       throws Exception
     {
       closeOnFlush(_s3Channel);
+      closeS3Channel();
     }
 
     @Override
@@ -293,7 +254,18 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     {
       e.getCause().printStackTrace();
       closeOnFlush(e.getChannel());
+      closeS3Channel();
       _listener.onProxyError();
+    }
+  }
+
+  void closeS3Channel()
+  {
+    _state = State.closed;
+    if (_s3Channel != null)
+    {
+      _s3Channel.close();
+      _s3Channel = null;
     }
   }
 

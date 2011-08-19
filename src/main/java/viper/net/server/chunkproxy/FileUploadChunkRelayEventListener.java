@@ -1,21 +1,12 @@
 package viper.net.server.chunkproxy;
 
 
-import com.sun.istack.internal.NotNull;
-import com.sun.jersey.server.impl.container.netty.NettyHandlerContainer;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.handler.codec.base64.Base64;
-import org.jboss.netty.handler.codec.base64.Base64Dialect;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
