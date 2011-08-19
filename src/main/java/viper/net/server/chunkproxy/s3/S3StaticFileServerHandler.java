@@ -79,8 +79,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private Channel _destChannel;
   private String _bucketKey;
 
-  final Object _trafficLock = new Object();
-
   private enum State
   {
     init,
@@ -356,82 +354,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
             _s3Channel.setReadable(false);
           }
         }
-      }
-    }
-
-//    @Override
-    public void messageReceived2(ChannelHandlerContext ctx, final MessageEvent e)
-      throws Exception
-    {
-      Object obj = e.getMessage();
-      if (!(obj instanceof HttpResponse))
-      {
-        return;
-      }
-
-      HttpResponse m = (HttpResponse)obj;
-
-      System.out.println("response in current state: " + _state);
-
-      synchronized (_trafficLock)
-      {
-        if (_state.equals(State.init))
-        {
-          if (m.getStatus() == HttpResponseStatus.OK)
-          {
-            _state = State.connected;
-
-            Map<String, List<String>> headers = new HashMap<String, List<String>>();
-            String uri = _s3AuthGenerator.get(_bucketName, _bucketKey, headers);
-
-            HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri);
-
-            _s3Channel.write(request);
-          }
-          else
-          {
-            closeS3Channel();
-          }
-        }
-        else if (_state.equals(State.connected))
-        {
-          if (m.getStatus() == HttpResponseStatus.OK)
-          {
-            String contentType = m.getHeader(Names.CONTENT_TYPE);
-            long contentLength = Long.parseLong(m.getHeader(Names.CONTENT_LENGTH));
-
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            response.setHeader(Names.CONTENT_TYPE, contentType);
-            setContentLength(response, contentLength);
-            response.setContent(m.getContent());
-            _destChannel.write(response);
-
-            _state = State.relay;
-          }
-          else
-          {
-            closeS3Channel();
-          }
-        }
-        else if (_state.equals(State.relay))
-        {
-          if (m.getStatus() == HttpResponseStatus.OK)
-          {
-            _destChannel.write(m.getContent());
-
-            if (!_destChannel.isWritable())
-            {
-              _s3Channel.setReadable(false);
-            }
-          }
-          else
-          {
-            closeS3Channel();
-          }
-        }
         else
         {
-          System.out.println("unhandled response @ " + _state);
+          // TODO: support keepalive
+          closeS3Channel();
         }
       }
     }
@@ -442,12 +368,9 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     {
       // If _s3Channel is not saturated anymore, continue accepting
       // the incoming traffic from the inboundChannel.
-      synchronized (_trafficLock)
+      if (e.getChannel().isWritable())
       {
-        if (e.getChannel().isWritable())
-        {
-          _s3Channel.setReadable(true);
-        }
+        _s3Channel.setReadable(true);
       }
     }
 
