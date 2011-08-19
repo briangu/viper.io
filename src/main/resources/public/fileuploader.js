@@ -143,6 +143,9 @@ qq.setText = function(element, text){
     element.innerText = text;
     element.textContent = text;
 };
+qq.setHtml = function(element, html){
+	    element.innerHTML = html;
+};
 
 //
 // Selecting elements
@@ -495,6 +498,7 @@ qq.FileUploader = function(o){
                 '<span class="qq-upload-file"></span>' +
                 '<span class="qq-upload-spinner"></span>' +
                 '<span class="qq-upload-size"></span>' +
+		'<span class="qq-upload-url"></span>' +
                 '<a class="qq-upload-cancel" href="#">Cancel</a>' +
                 '<span class="qq-upload-failed-text">Failed</span>' +
             '</li>',        
@@ -509,6 +513,7 @@ qq.FileUploader = function(o){
             file: 'qq-upload-file',
             spinner: 'qq-upload-spinner',
             size: 'qq-upload-size',
+	    url: 'qq-upload-url',
             cancel: 'qq-upload-cancel',
 
             // added to list item when upload completes
@@ -617,6 +622,7 @@ qq.extend(qq.FileUploader.prototype, {
         
         if (result.success){
             qq.addClass(item, this._classes.success);    
+	    qq.setHtml(this._find(item, 'url'), "<a href=\"" + result.url + "\">" + result.url + "</a>");
         } else {
             qq.addClass(item, this._classes.fail);
         }         

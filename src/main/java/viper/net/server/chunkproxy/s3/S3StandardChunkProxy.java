@@ -41,15 +41,14 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   private final QueryStringAuthGenerator _s3AuthGenerator;
   private final String _bucketName;
   private String _bucketKey;
-  private String _fileName;
 
+  private Map<String, String> _objectMeta;
   private long _objectSize;
 
   private final ClientSocketChannelFactory _cf;
   private final String _remoteHost;
   private final int _remotePort;
   private volatile Channel _s3Channel;
-  private String _contentType;
 
   final Object _trafficLock = new Object();
 
@@ -120,17 +119,15 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   public void init(
     HttpChunkProxyEventListener listener,
     String objectName,
-    long objectSize,
-    String contentType)
+    Map<String, String> meta,
+    long objectSize)
       throws Exception
   {
     _state = State.init;
     _listener = listener;
-    _fileName = objectName;
+    _bucketKey = objectName;
+    _objectMeta = meta;
     _objectSize = objectSize;
-    _contentType = contentType;
-
-    _bucketKey = UUID.randomUUID().toString();
 
     _listener.onProxyPaused();
 
@@ -142,20 +139,22 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   {
     if (_state.equals(State.connected))
     {
-      Map<String, List<String>> meta = new HashMap<String, List<String>>();
       Map<String, List<String>> headers = new HashMap<String, List<String>>();
-      headers.put("x-amz-meta-filename", Arrays.asList(_fileName));
+      headers.put("x-amz-meta-filename", Arrays.asList(_objectMeta.get("filename")));
       headers.put(HttpHeaders.Names.CONTENT_LENGTH, Arrays.asList(Long.toString(_objectSize)));
-      headers.put(HttpHeaders.Names.CONTENT_TYPE, Arrays.asList(_contentType));
-      S3Object object = new S3Object(null, meta);
+      headers.put(HttpHeaders.Names.CONTENT_TYPE, Arrays.asList(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE)));
+      S3Object object = new S3Object(null, new HashMap<String, List<String>>());
       String uri = _s3AuthGenerator.put(_bucketName, _bucketKey, object, headers);
+
       HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.PUT, uri);
-      request.setHeader("x-amz-meta-filename", _fileName);
-      request.setHeader(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(_objectSize));
-      request.setHeader(HttpHeaders.Names.CONTENT_TYPE, _contentType);
+      for (String headerKey : headers.keySet())
+      {
+        request.setHeader(headerKey, headers.get(headerKey).get(0));
+      }
       request.setContent(chunk.getContent());
 
       _listener.onProxyPaused();
+
       ChannelFuture f = _s3Channel.write(request);
       f.addListener(new ChannelFutureListener()
       {
@@ -250,9 +249,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
         {
           if (m.getStatus() == HttpResponseStatus.OK)
           {
-            // extract etag from result
-            // String etag =
-            // _multipartEtags.add(etag);
+            // TODO: process response
           }
           else
           {
@@ -260,10 +257,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
             _s3Channel.close();
             _listener.onProxyError();
           }
-        }
-        else if (_state.equals(State.relay))
-        {
-          _s3Channel.close();
         }
         else
         {

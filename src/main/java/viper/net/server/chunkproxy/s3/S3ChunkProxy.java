@@ -2,6 +2,7 @@ package viper.net.server.chunkproxy.s3;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
+import java.util.Map;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import viper.net.server.chunkproxy.HttpChunkProxyEventListener;
@@ -54,13 +55,22 @@ public class S3ChunkProxy implements HttpChunkRelayProxy
   }
 
   @Override
-  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize, String contentType)
-    throws Exception
+  public void init(
+    HttpChunkProxyEventListener listener,
+    String objectName,
+    Map<String, String> objectMeta,
+    long objectSize)
+      throws Exception
   {
     _currentProxy = (objectSize > _multipartThresholdSize)
                 ? _multipartProxy
                 : _standardProxy;
-    _currentProxy.init(listener, objectName, objectSize, contentType);
+
+    _currentProxy.init(
+      listener,
+      objectName,
+      objectMeta,
+      objectSize);
   }
 
   @Override

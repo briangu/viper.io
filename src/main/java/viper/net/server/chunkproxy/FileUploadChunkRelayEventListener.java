@@ -1,22 +1,33 @@
 package viper.net.server.chunkproxy;
 
 
+import com.sun.istack.internal.NotNull;
+import com.sun.jersey.server.impl.container.netty.NettyHandlerContainer;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.UUID;
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.handler.codec.base64.Base64;
+import org.jboss.netty.handler.codec.base64.Base64Dialect;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.json.JSONException;
 import org.json.JSONObject;
+import viper.net.server.Util;
 
 
 public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventListener
 {
-  Map<String, String> _props;
+  String _fileKey;
 
   public void onError(Channel clientChannel)
   {
@@ -29,9 +40,10 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
   }
 
   @Override
-  public void onStart(Map<String, String> props)
+  public String onStart(Map<String, String> props)
   {
-    _props = props;
+    _fileKey = Util.base64Encode(UUID.randomUUID());
+    return _fileKey;
   }
 
   private void sendResponse(Channel clientChannel, boolean success)
@@ -41,10 +53,7 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
       JSONObject jsonResponse = new JSONObject();
       jsonResponse.put("success", Boolean.toString(success));
-      if (_props.containsKey("X-File-Name"))
-      {
-        jsonResponse.put("filename", _props.get("X-File-Name"));
-      }
+      jsonResponse.put("url", String.format("http://localhost:8080/uploads/%s", _fileKey));
       response.setContent(ChannelBuffers.wrappedBuffer(jsonResponse.toString(2).getBytes("UTF-8")));
       clientChannel.write(response).addListener(ChannelFutureListener.CLOSE);
     }

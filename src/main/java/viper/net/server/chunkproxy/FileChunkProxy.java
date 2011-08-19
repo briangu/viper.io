@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 
 
@@ -44,8 +45,12 @@ public class FileChunkProxy implements HttpChunkRelayProxy
   }
 
   @Override
-  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize, String contentType)
-    throws Exception
+  public void init(
+    HttpChunkProxyEventListener listener,
+    String objectName,
+    Map<String, String> objectMeta,
+    long objectSize)
+      throws Exception
   {
     if (!_state.equals(State.closed))
     {
@@ -59,6 +64,7 @@ public class FileChunkProxy implements HttpChunkRelayProxy
     _raf.setLength(objectSize);
     _fileChannel = _raf.getChannel();
     _state = State.relay;
+
     _listener.onProxyReady();
   }
 

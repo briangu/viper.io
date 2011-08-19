@@ -67,11 +67,12 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
         String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
         String contentType = Util.getContentType(filename);
 
-        _chunkRelayProxy.init(
-          this,
-          filename,
-          contentLength,
-          contentType);
+        Map<String, String> meta = new HashMap<String, String>();
+        if (filename != null) meta.put("filename", filename);
+        meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
+        String fileKey = _relayListener.onStart(meta);
+
+        _chunkRelayProxy.init(this, fileKey, meta, contentLength);
 
 /*
         List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
@@ -81,16 +82,6 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
           m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
         }
 */
-
-        Map<String, String> props = new HashMap<String, String>();
-        if (filename != null)
-        {
-          props.put("X-File-Name", filename);
-        }
-        props.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(contentLength));
-        props.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
-
-        _relayListener.onStart(props);
       }
       else
       {

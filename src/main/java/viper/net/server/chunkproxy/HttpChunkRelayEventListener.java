@@ -9,5 +9,5 @@ public interface HttpChunkRelayEventListener
 {
   void onError(Channel clientChannel);
   void onCompleted(Channel clientChannel);
-  void onStart(Map<String, String> props);
+  String onStart(Map<String, String> props);
 }

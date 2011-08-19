@@ -113,8 +113,12 @@ public class S3MultipartChunkProxy implements HttpChunkRelayProxy
   }
 
   @Override
-  public void init(HttpChunkProxyEventListener listener, String objectName, long objectSize, String contentType)
-    throws Exception
+  public void init(
+    HttpChunkProxyEventListener listener,
+    String objectName,
+    Map<String, String> meta,
+    long objectSize)
+      throws Exception
   {
     _state = State.init;
     _listener = listener;
