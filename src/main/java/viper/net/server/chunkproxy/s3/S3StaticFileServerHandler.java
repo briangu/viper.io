@@ -205,7 +205,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
 
     // Close the connection as soon as the error message is sent.
-    ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+    if (ctx.getChannel().isWritable())
+    {
+      ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+    }
   }
 
   private class S3ResponseHandler extends SimpleChannelUpstreamHandler
@@ -230,6 +233,12 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
       Object obj = e.getMessage();
       if (obj instanceof HttpResponse)
       {
+        if (!_destChannel.isWritable())
+        {
+          closeS3Channel();
+          return;
+        }
+
         HttpResponse m = (HttpResponse)obj;
 
         if (m.getStatus().equals(HttpResponseStatus.OK))
@@ -263,6 +272,12 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
       }
       else if (obj instanceof HttpChunk)
       {
+        if (!_destChannel.isWritable())
+        {
+          closeS3Channel();
+          return;
+        }
+
         HttpChunk chunk = (HttpChunk)obj;
         ChannelFuture f = _destChannel.write(chunk);
         f.addListener(new ChannelFutureListener()
@@ -345,7 +360,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
   {
     if (ch.isConnected())
     {
-      ch.write(ChannelBuffers.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+      if (ch.isWritable())
+      {
+        ch.write(ChannelBuffers.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+      }
     }
   }
 }
