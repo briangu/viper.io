@@ -2,26 +2,15 @@ package viper.net.server.chunkproxy.s3;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
-import com.amazon.s3.S3Object;
 import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.rmi.server.UID;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.activation.MimetypesFileTypeMap;
-import javax.swing.plaf.UIResource;
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -33,7 +22,6 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunk;
@@ -46,17 +34,10 @@ import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import org.jboss.netty.handler.codec.rtsp.RtspRequestEncoder;
-import org.jboss.netty.handler.codec.rtsp.RtspResponseDecoder;
 import org.jboss.netty.util.CharsetUtil;
-import viper.net.common.HttpResponseLoggingHandler;
-import viper.net.server.CachableHttpResponse;
-import viper.net.server.Util;
-import viper.net.server.chunkproxy.HttpChunkProxyEventListener;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static org.jboss.netty.handler.codec.http.HttpMethod.GET;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
@@ -67,8 +48,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
   private final QueryStringAuthGenerator _s3AuthGenerator;
   private final String _bucketName;
-
-  private String _prefixPath;
 
   private final ClientSocketChannelFactory _cf;
   private final String _remoteHost;
@@ -99,15 +78,13 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     String bucketName,
     ClientSocketChannelFactory cf,
     String remoteHost,
-    int remotePort,
-    String prefixPath)
+    int remotePort)
   {
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
     _cf = cf;
     _remoteHost = remoteHost;
     _remotePort = remotePort;
-    _prefixPath = prefixPath;
   }
 
   private void connect()
@@ -179,12 +156,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     if (path == null)
     {
       sendError(ctx, FORBIDDEN);
-      return;
-    }
-
-    if (!uri.startsWith(_prefixPath))
-    {
-      ctx.sendUpstream(e);
       return;
     }
 
@@ -306,7 +277,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
           long contentLength = Long.parseLong(m.getHeader(Names.CONTENT_LENGTH));
 
           DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-          response.setHeader(Names.CONTENT_TYPE, contentType);
+          response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentType);
           setContentLength(response, contentLength);
           response.setContent(m.getContent());
           ChannelFuture f = _destChannel.write(response);
@@ -314,11 +285,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
           {
             @Override
             public void operationComplete(ChannelFuture future)
-              throws Exception
+                throws Exception
             {
               if (!future.isSuccess())
               {
-                // sendError();
                 closeS3Channel();
               }
             }
@@ -338,7 +308,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
         {
           @Override
           public void operationComplete(ChannelFuture future)
-            throws Exception
+              throws Exception
           {
             if (!future.isSuccess())
             {
@@ -347,16 +317,13 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
           }
         });
 
-        if (!chunk.isLast())
+        if (!_destChannel.isWritable())
         {
-          if (!_destChannel.isWritable())
-          {
-            _s3Channel.setReadable(false);
-          }
+          _s3Channel.setReadable(false);
         }
-        else
+
+        if (chunk.isLast())
         {
-          // TODO: support keepalive
           closeS3Channel();
         }
       }
@@ -387,13 +354,15 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
       throws Exception
     {
       e.getCause().printStackTrace();
-      closeOnFlush(e.getChannel());
+      closeOnFlush(_destChannel);
       closeS3Channel();
     }
   }
 
   private void closeS3Channel()
   {
+    // TODO: support keepalive
+
     _state = State.closed;
     if (_s3Channel != null)
     {

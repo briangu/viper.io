@@ -1,4 +1,4 @@
-package viper.net.server;
+package viper.net.server.chunkproxy;
 
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
@@ -30,6 +30,8 @@ import org.jboss.netty.util.CharsetUtil;
 import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.*;
+import viper.net.server.CachableHttpResponse;
+import viper.net.server.Util;
 
 
 /**
@@ -95,7 +97,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
     for (String defaultFile : defaultFiles)
     {
-      File tmpFile = new File(rootPath + File.pathSeparatorChar + defaultFile);
+      File tmpFile = new File(rootPath + "/" + defaultFile);
       if (tmpFile.exists())
       {
         foundIndex = tmpFile;
@@ -137,12 +139,10 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       return;
     }
 
-    String contentType = Util.getContentType(path);
-
     CachableHttpResponse response = new CachableHttpResponse(HTTP_1_1, OK);
     response.setRequestUri(request.getUri());
     response.setCacheMaxAge(_cacheMaxAge);
-    response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentType);
+    response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.contentType);
     setContentLength(response, contentInfo.content.readableBytes());
 
     response.setBackingFileChannel(contentInfo.fileChannel);
@@ -161,11 +161,13 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   {
     public ChannelBuffer content;
     public FileChannel fileChannel;
+    public String contentType;
 
-    public FileContentInfo(FileChannel fileChannel, ChannelBuffer content)
+    public FileContentInfo(FileChannel fileChannel, ChannelBuffer content, String contentType)
     {
       this.fileChannel = fileChannel;
       this.content = content;
+      this.contentType = contentType;
     }
   }
 
@@ -192,18 +194,25 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
         file = new File(_rootPath + path);
       }
 
-      if (!file.exists())
+      String contentType;
+
+      if (!file.exists() || path.equals("/"))
       {
         file = path.equals("/") ? _indexFile : null;
         if (file == null)
         {
           return null;
         }
+        contentType = "text/html";
+      }
+      else
+      {
+        contentType = Util.getContentType(path);
       }
 
       fc = new RandomAccessFile(file, "r").getChannel();
       ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf));
+      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
     }
     catch (IOException e)
     {
@@ -274,7 +283,10 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
     // Simplistic dumb security check.
     // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + ".") || uri.contains("." + File.separator) || uri.startsWith(".") || uri.endsWith("."))
+    if (uri.contains(File.separator + ".")
+        || uri.contains("." + File.separator)
+        || uri.startsWith(".")
+        || uri.endsWith("."))
     {
       return null;
     }

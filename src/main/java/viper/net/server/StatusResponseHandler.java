@@ -14,20 +14,20 @@ import java.nio.charset.Charset;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class EchoResponseHandler extends SimpleChannelUpstreamHandler {
+public class StatusResponseHandler extends SimpleChannelUpstreamHandler {
     private String text;
     private HttpResponseStatus status = HttpResponseStatus.OK;
 
-    public EchoResponseHandler(String text) {
+    public StatusResponseHandler(String text) {
         this.text = text;
     }
 
-    public EchoResponseHandler(String text, HttpResponseStatus status) {
+    public StatusResponseHandler(String text, HttpResponseStatus status) {
         this(text);
         this.status = status;
     }
 
-    public EchoResponseHandler(String text, int status) {
+    public StatusResponseHandler(String text, int status) {
         this(text);
         this.status = HttpResponseStatus.valueOf(status);
     }

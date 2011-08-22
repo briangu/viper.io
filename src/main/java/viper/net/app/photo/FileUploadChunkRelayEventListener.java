@@ -1,4 +1,4 @@
-package viper.net.server.chunkproxy;
+package viper.net.app.photo;
 
 
 import java.io.UnsupportedEncodingException;
@@ -14,6 +14,7 @@ import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.json.JSONException;
 import org.json.JSONObject;
 import viper.net.server.Util;
+import viper.net.server.chunkproxy.HttpChunkRelayEventListener;
 
 
 public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventListener
@@ -44,7 +45,7 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
       JSONObject jsonResponse = new JSONObject();
       jsonResponse.put("success", Boolean.toString(success));
-      jsonResponse.put("url", String.format("http://localhost:18080/uploads/%s", _fileKey));
+      jsonResponse.put("url", String.format("http://localhost:18080/d/%s", _fileKey));
       response.setContent(ChannelBuffers.wrappedBuffer(jsonResponse.toString(2).getBytes("UTF-8")));
       clientChannel.write(response).addListener(ChannelFutureListener.CLOSE);
     }

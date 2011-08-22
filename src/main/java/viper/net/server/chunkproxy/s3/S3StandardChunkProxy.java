@@ -187,7 +187,23 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   public void complete(HttpChunk chunk)
   {
     _state = State.complete;
-    _s3Channel.write(chunk.getContent());
+
+    if (chunk == null) return;
+
+    ChannelFuture f = _s3Channel.write(chunk.getContent());
+    f.addListener(new ChannelFutureListener()
+    {
+      @Override
+      public void operationComplete(ChannelFuture future)
+          throws Exception
+      {
+        if (!future.isSuccess())
+        {
+          _listener.onProxyError();
+          closeS3Channel();
+        }
+      }
+    });
   }
 
   @Override

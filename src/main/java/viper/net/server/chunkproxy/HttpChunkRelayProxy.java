@@ -20,5 +20,6 @@ public interface HttpChunkRelayProxy
   public void complete(HttpChunk chunk);
 
   public void abort();
+
 }
 

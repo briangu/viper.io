@@ -13,6 +13,7 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
@@ -28,6 +29,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
   private int _currentByteCount;
   private final HttpChunkRelayProxy _chunkRelayProxy;
   private final HttpChunkRelayEventListener _relayListener;
+  private HttpChunk _singleChunk;
 
   public HttpChunkProxyHandler(
     HttpChunkRelayProxy chunkRelayProxy,
@@ -53,41 +55,27 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
     if (_currentMessage == null)
     {
       HttpMessage m = (HttpMessage) msg;
-      if (m.isChunked())
-      {
-        _currentMessage = m;
-        _currentByteCount = 0;
-        _inboundChannel = e.getChannel();
 
-        long contentLength =
-          m.containsHeader("Content-Length")
-            ? contentLength = Long.parseLong(m.getHeader("Content-Length"))
-            : -1;
+      long contentLength =
+        m.containsHeader("Content-Length")
+          ? contentLength = Long.parseLong(m.getHeader("Content-Length"))
+          : -1;
 
-        String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
-        String contentType = Util.getContentType(filename);
+      String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
+      String contentType = Util.getContentType(filename);
 
-        Map<String, String> meta = new HashMap<String, String>();
-        if (filename != null) meta.put("filename", filename);
-        meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
-        String fileKey = _relayListener.onStart(meta);
+      _currentMessage = m;
+      _currentByteCount = 0;
+      _inboundChannel = e.getChannel();
 
-        _chunkRelayProxy.init(this, fileKey, meta, contentLength);
+      Map<String, String> meta = new HashMap<String, String>();
+      if (filename != null) meta.put("filename", filename);
+      meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
+      String fileKey = _relayListener.onStart(meta);
 
-/*
-        List<String> encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
-        encodings.remove(HttpHeaders.Values.CHUNKED);
-        if (encodings.isEmpty())
-        {
-          m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
-        }
-*/
-      }
-      else
-      {
-        // Not a chunked message - pass through.
-        ctx.sendUpstream(e);
-      }
+      _singleChunk = m.isChunked() ? null : new DefaultHttpChunk(m.getContent());
+
+      _chunkRelayProxy.init(this, fileKey, meta, contentLength);
     }
     else
     {
@@ -156,6 +144,21 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
   @Override
   public void onProxyReady()
   {
+    // TODO: fix this horrible statemachine hack
+    if (!_currentMessage.isChunked())
+    {
+      if (_singleChunk != null)
+      {
+        HttpChunk tmpChunk = _singleChunk;
+        _singleChunk = null;
+        _chunkRelayProxy.appendChunk(tmpChunk);
+      }
+      else
+      {
+        _chunkRelayProxy.complete(null);
+        _relayListener.onCompleted(_inboundChannel);
+      }
+    }
     _inboundChannel.setReadable(true);
   }
 

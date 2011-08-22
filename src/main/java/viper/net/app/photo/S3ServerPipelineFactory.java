@@ -17,20 +17,23 @@ package viper.net.app.photo;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
+import java.util.LinkedHashMap;
 import java.util.Set;
+import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import viper.net.server.StaticFileServerHandler;
-import viper.net.server.chunkproxy.FileChunkProxy;
-import viper.net.server.chunkproxy.FileUploadChunkRelayEventListener;
+import viper.net.server.chunkproxy.StaticFileServerHandler;
+import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
-import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
+import viper.net.server.router.Matcher;
+import viper.net.server.router.RouterHandler;
+import viper.net.server.router.UriStartsWithMatcher;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -75,7 +78,6 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
     HttpChunkRelayProxy proxy;
 
     String rootPath = "src/main/resources/public";
-    proxy = new FileChunkProxy(rootPath + "/uploads");
 
     proxy =
       new S3StandardChunkProxy(
@@ -87,13 +89,18 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
 
     FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
+    LinkedHashMap<Matcher, ChannelHandler> routes = new LinkedHashMap<Matcher, ChannelHandler>();
+    routes.put(new UriStartsWithMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+    routes.put(new UriStartsWithMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
+    routes.put(new UriStartsWithMatcher("/"), new StaticFileServerHandler(rootPath));
+//    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
+
+    RouterHandler routerHandler = new RouterHandler("uri-handlers", routes);
+
     ChannelPipeline pipeline = pipeline();
     pipeline.addLast("decoder", new HttpRequestDecoder());
-    pipeline.addLast("aggregator", new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
     pipeline.addLast("encoder", new HttpResponseEncoder());
-//    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    pipeline.addLast("s3static", new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort, "/uploads/"));
-    pipeline.addLast("static", new StaticFileServerHandler(rootPath));
+    pipeline.addLast("router", routerHandler);
 
     return pipeline;
   }

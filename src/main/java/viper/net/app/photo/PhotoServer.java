@@ -65,7 +65,7 @@ public class PhotoServer
     ClientSocketChannelFactory cf =
             new NioClientSocketChannelFactory(executor, executor);
 
-    QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret);
+    QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret, false);
 
     String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
 
