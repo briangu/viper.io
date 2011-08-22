@@ -137,6 +137,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     if (_state.equals(State.connected))
     {
       Map<String, List<String>> headers = new HashMap<String, List<String>>();
+      headers.put("x-amz-acl", Arrays.asList("public-read"));
       headers.put("x-amz-meta-filename", Arrays.asList(_objectMeta.get("filename")));
       headers.put(HttpHeaders.Names.CONTENT_LENGTH, Arrays.asList(Long.toString(_objectSize)));
       headers.put(HttpHeaders.Names.CONTENT_TYPE, Arrays.asList(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE)));

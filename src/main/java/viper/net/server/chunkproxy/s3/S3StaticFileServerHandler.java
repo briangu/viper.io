@@ -310,7 +310,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
           public void operationComplete(ChannelFuture future)
               throws Exception
           {
-            if (!future.isSuccess())
+            if (future.isSuccess())
             {
               closeS3Channel();
             }
@@ -319,7 +319,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
         if (!_destChannel.isWritable())
         {
-          _s3Channel.setReadable(false);
+          if (_s3Channel != null)
+          {
+            _s3Channel.setReadable(false);
+          }
         }
 
         if (chunk.isLast())
@@ -337,7 +340,10 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
       // the incoming traffic from the inboundChannel.
       if (e.getChannel().isWritable())
       {
-        _s3Channel.setReadable(true);
+        if (_s3Channel != null)
+        {
+          _s3Channel.setReadable(true);
+        }
       }
     }
 

@@ -45,7 +45,7 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
       JSONObject jsonResponse = new JSONObject();
       jsonResponse.put("success", Boolean.toString(success));
-      jsonResponse.put("url", String.format("http://localhost:18080/d/%s", _fileKey));
+      jsonResponse.put("url", String.format("http://f.bingobot.com/%s", _fileKey));
       response.setContent(ChannelBuffers.wrappedBuffer(jsonResponse.toString(2).getBytes("UTF-8")));
       clientChannel.write(response).addListener(ChannelFutureListener.CLOSE);
     }
