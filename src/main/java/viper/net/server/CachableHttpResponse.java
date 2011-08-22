@@ -1,57 +1,77 @@
 package viper.net.server;
 
+
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 
-public class CachableHttpResponse extends DefaultHttpResponse {
-    private String requestUri;
-    private int cacheMaxAge;
-    private FileChannel fileChannel;
 
-    public CachableHttpResponse(HttpVersion version, HttpResponseStatus status) {
-        super(version, status);
-    }
+public class CachableHttpResponse extends DefaultHttpResponse
+{
+  private String _host;
+  private String _requestUri;
+  private int _cacheMaxAge;
+  private FileChannel _fileChannel;
 
-    public String getRequestUri() {
-        return requestUri;
-    }
+  public CachableHttpResponse(HttpVersion version, HttpResponseStatus status)
+  {
+    super(version, status);
+  }
 
-    public void setRequestUri(String requestUri) {
-        this.requestUri = requestUri;
-    }
+  public String getHost()
+  {
+    return _host;
+  }
 
-    public int getCacheMaxAge() {
-        return cacheMaxAge;
-    }
+  public void setHost(String host)
+  {
+    _host = host;
+  }
 
-    public void setCacheMaxAge(int cacheMaxAge) {
-        this.cacheMaxAge = cacheMaxAge;
-    }
+  public String getRequestUri()
+  {
+    return _requestUri;
+  }
 
-    public void setBackingFileChannel(FileChannel fileChannel) {
-        this.fileChannel = fileChannel;
-    }
+  public void setRequestUri(String requestUri)
+  {
+    this._requestUri = requestUri;
+  }
 
-    public FileChannel getFileChannel()
+  public int getCacheMaxAge()
+  {
+    return _cacheMaxAge;
+  }
+
+  public void setCacheMaxAge(int cacheMaxAge)
+  {
+    this._cacheMaxAge = cacheMaxAge;
+  }
+
+  public void setBackingFileChannel(FileChannel fileChannel)
+  {
+    this._fileChannel = fileChannel;
+  }
+
+  public FileChannel getFileChannel()
+  {
+    return _fileChannel;
+  }
+
+  public void dispose()
+  {
+    if (_fileChannel != null)
     {
-        return fileChannel;
+      try
+      {
+        _fileChannel.close();
+      }
+      catch (IOException e)
+      {
+        e.printStackTrace();
+      }
     }
-
-    public void dispose()
-    {
-        if (fileChannel != null)
-        {
-            try
-            {
-                fileChannel.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
+  }
 }

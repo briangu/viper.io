@@ -1,4 +1,4 @@
-package viper.net.app.photo;
+package viper.app.photo;
 
 
 import java.io.UnsupportedEncodingException;

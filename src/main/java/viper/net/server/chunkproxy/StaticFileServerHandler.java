@@ -140,6 +140,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
 
     CachableHttpResponse response = new CachableHttpResponse(HTTP_1_1, OK);
+    response.setHost(request.getHeader("Host"));
     response.setRequestUri(request.getUri());
     response.setCacheMaxAge(_cacheMaxAge);
     response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.contentType);

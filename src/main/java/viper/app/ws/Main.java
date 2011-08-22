@@ -1,4 +1,4 @@
-package viper.net.app.ws;
+package viper.app.ws;
 
 
 public class Main

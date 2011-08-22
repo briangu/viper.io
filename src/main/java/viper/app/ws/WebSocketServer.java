@@ -13,10 +13,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package viper.net.app.photo;
+package viper.app.ws;
 
 
-import com.amazon.s3.QueryStringAuthGenerator;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -27,7 +26,6 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import viper.net.app.ws.WebSocketServerPipelineFactory;
 
 
 /**
@@ -42,52 +40,39 @@ import viper.net.app.ws.WebSocketServerPipelineFactory;
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @version $Rev: 2080 $, $Date: 2010-01-26 18:04:19 +0900 (Tue, 26 Jan 2010) $
  */
-public class PhotoServer
+public class WebSocketServer
 {
   private ServerBootstrap _bootstrap;
 
-  public static PhotoServer create(int port,
-                                   String awsId,
-                                   String awsSecret,
-                                   String bucketName)
+  public static WebSocketServer create(int port)
   {
     Set<ChannelHandlerContext> listeners = new CopyOnWriteArraySet<ChannelHandlerContext>();
 
-    PhotoServer photoServer = new PhotoServer();
+    WebSocketServer server = new WebSocketServer();
 
-    photoServer._bootstrap =
-      new ServerBootstrap(
-        new NioServerSocketChannelFactory(
-          Executors.newCachedThreadPool(),
-          Executors.newCachedThreadPool()));
+    server._bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+                                                                              Executors.newCachedThreadPool()));
 
+ // Configure the bootstrap.
     Executor executor = Executors.newCachedThreadPool();
+    // Set up the event pipeline factory.
     ClientSocketChannelFactory cf =
             new NioClientSocketChannelFactory(executor, executor);
 
-    QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret, false);
+    String remoteHost = "nettytest__31415923141592.s3.amazonaws.com";
 
-    String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
-
-    S3ServerPipelineFactory factory =
-      new S3ServerPipelineFactory(
-        authGenerator,
-        bucketName,
-        cf,
-        remoteHost,
-        80,
-        (1024*1024)*1024,
-        listeners);
+    WebSocketServerPipelineFactory factory =
+      new WebSocketServerPipelineFactory(1024*1024*1024, listeners);
 
     // Set up the event pipeline factory.
-    photoServer._bootstrap.setPipelineFactory(factory);
+    server._bootstrap.setPipelineFactory(factory);
 
     // Bind and start to accept incoming connections.
-    photoServer._bootstrap.bind(new InetSocketAddress(port));
+    server._bootstrap.bind(new InetSocketAddress(port));
 
 //    new Thread(new CounterRunnable(listeners)).start();
 
-    return photoServer;
+    return server;
   }
 
 /*

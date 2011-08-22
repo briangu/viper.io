@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package viper.net.app.photo;
+package viper.app.photo;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
@@ -46,7 +46,6 @@ import static org.jboss.netty.channel.Channels.pipeline;
  */
 public class S3ServerPipelineFactory implements ChannelPipelineFactory
 {
-
   Set<ChannelHandlerContext> _listeners;
 
   private final ClientSocketChannelFactory _cf;
