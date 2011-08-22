@@ -125,7 +125,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       uri = uri.replaceFirst(_stripFromUri, "");
     }
 
-    final String path = sanitizeUri(uri);
+    final String path = Util.sanitizeUri(uri);
     if (path == null)
     {
       sendError(ctx, FORBIDDEN);
@@ -256,45 +256,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     {
       sendError(ctx, INTERNAL_SERVER_ERROR);
     }
-  }
-
-  private String sanitizeUri(String uri)
-    throws URISyntaxException
-  {
-    // Decode the path.
-    try
-    {
-      uri = URLDecoder.decode(uri, "UTF-8");
-    }
-    catch (UnsupportedEncodingException e)
-    {
-      try
-      {
-        uri = URLDecoder.decode(uri, "ISO-8859-1");
-      }
-      catch (UnsupportedEncodingException e1)
-      {
-        throw new Error();
-      }
-    }
-
-    // Convert file separators.
-    uri = uri.replace(File.separatorChar, '/');
-
-    // Simplistic dumb security check.
-    // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + ".")
-        || uri.contains("." + File.separator)
-        || uri.startsWith(".")
-        || uri.endsWith("."))
-    {
-      return null;
-    }
-
-    QueryStringDecoder decoder = new QueryStringDecoder(uri);
-    uri = decoder.getPath();
-
-    return uri;
   }
 
   private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)

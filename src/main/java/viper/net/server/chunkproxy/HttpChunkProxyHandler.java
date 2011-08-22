@@ -2,9 +2,8 @@ package viper.net.server.chunkproxy;
 
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -20,7 +19,7 @@ import org.jboss.netty.handler.codec.http.HttpMessage;
 import viper.net.server.Util;
 
 
-public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implements HttpChunkProxyEventListener
+public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
 {
 
   private volatile HttpMessage _currentMessage;
@@ -29,7 +28,6 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
   private int _currentByteCount;
   private final HttpChunkRelayProxy _chunkRelayProxy;
   private final HttpChunkRelayEventListener _relayListener;
-  private HttpChunk _singleChunk;
 
   public HttpChunkProxyHandler(
     HttpChunkRelayProxy chunkRelayProxy,
@@ -54,7 +52,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
 
     if (_currentMessage == null)
     {
-      HttpMessage m = (HttpMessage) msg;
+      final HttpMessage m = (HttpMessage) msg;
 
       long contentLength =
         m.containsHeader("Content-Length")
@@ -64,18 +62,99 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
       String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
       String contentType = Util.getContentType(filename);
 
-      _currentMessage = m;
-      _currentByteCount = 0;
-      _inboundChannel = e.getChannel();
-
       Map<String, String> meta = new HashMap<String, String>();
       if (filename != null) meta.put("filename", filename);
       meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
       String fileKey = _relayListener.onStart(meta);
 
-      _singleChunk = m.isChunked() ? null : new DefaultHttpChunk(m.getContent());
+      if (m.isChunked())
+      {
+        _currentMessage = m;
+        _currentByteCount = 0;
+        _inboundChannel = e.getChannel();
 
-      _chunkRelayProxy.init(this, fileKey, meta, contentLength);
+        _chunkRelayProxy.init(
+          new HttpChunkProxyEventListener() {
+
+            @Override
+            public void onProxyConnected()
+            {
+            }
+
+            @Override
+            public void onProxyWriteReady()
+            {
+              _inboundChannel.setReadable(true);
+            }
+
+            @Override
+            public void onProxyWritePaused()
+            {
+              _inboundChannel.setReadable(false);
+            }
+
+            @Override
+            public void onProxyCompleted()
+            {
+              _relayListener.onCompleted(_inboundChannel);
+            }
+
+            @Override
+            public void onProxyError()
+            {
+              if (_inboundChannel != null)
+              {
+                _inboundChannel.setReadable(false);
+              }
+              if (_currentMessage != null)
+              {
+                _currentMessage.setHeader(HttpHeaders.Names.WARNING, "failed to relay data");
+              }
+            }
+          },
+          fileKey,
+          meta,
+          contentLength);
+      }
+      else
+      {
+        final HttpChunk singleChunk = new LastHttpChunk(m.getContent());
+
+        _chunkRelayProxy.init(
+          new HttpChunkProxyEventListener() {
+
+            @Override
+            public void onProxyConnected()
+            {
+              _chunkRelayProxy.writeChunk(singleChunk);
+            }
+
+            @Override
+            public void onProxyWriteReady()
+            {
+            }
+
+            @Override
+            public void onProxyWritePaused()
+            {
+            }
+
+            @Override
+            public void onProxyCompleted()
+            {
+              _relayListener.onCompleted(_inboundChannel);
+            }
+
+            @Override
+            public void onProxyError()
+            {
+              m.setHeader(HttpHeaders.Names.WARNING, "failed to relay data");
+            }
+          },
+          fileKey,
+          meta,
+          contentLength);
+      }
     }
     else
     {
@@ -92,15 +171,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
       {
         _currentByteCount += chunk.getContent().readableBytes();
 
-        if (!chunk.isLast())
-        {
-          _chunkRelayProxy.appendChunk(chunk);
-        }
-        else
-        {
-          _chunkRelayProxy.complete(chunk);
-          _relayListener.onCompleted(_inboundChannel);
-        }
+        _chunkRelayProxy.writeChunk(chunk);
       }
     }
   }
@@ -141,49 +212,30 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler implemen
     }
   }
 
-  @Override
-  public void onProxyReady()
+  private class LastHttpChunk implements HttpChunk
   {
-    // TODO: fix this horrible statemachine hack
-    if (!_currentMessage.isChunked())
-    {
-      if (_singleChunk != null)
-      {
-        HttpChunk tmpChunk = _singleChunk;
-        _singleChunk = null;
-        _chunkRelayProxy.appendChunk(tmpChunk);
-      }
-      else
-      {
-        _chunkRelayProxy.complete(null);
-        _relayListener.onCompleted(_inboundChannel);
-      }
+    private ChannelBuffer content;
+
+    public LastHttpChunk(ChannelBuffer content) {
+        setContent(content);
     }
-    _inboundChannel.setReadable(true);
-  }
 
-  @Override
-  public void onProxyPaused()
-  {
-    _inboundChannel.setReadable(false);
-  }
-
-  @Override
-  public void onProxyCompleted()
-  {
-
-  }
-
-  @Override
-  public void onProxyError()
-  {
-    if (_inboundChannel != null)
-    {
-      _inboundChannel.setReadable(false);
+    @Override
+    public ChannelBuffer getContent() {
+        return content;
     }
-    if (_currentMessage != null)
-    {
-      _currentMessage.setHeader(HttpHeaders.Names.WARNING, "failed to relay data");
+
+    @Override
+    public void setContent(ChannelBuffer content) {
+        if (content == null) {
+            throw new NullPointerException("content");
+        }
+        this.content = content;
+    }
+
+    @Override
+    public boolean isLast() {
+      return true;
     }
   }
 }

@@ -15,9 +15,7 @@ public interface HttpChunkRelayProxy
     Map<String, String> meta,
     long objectSize) throws Exception;
 
-  public void appendChunk(HttpChunk chunk);
-
-  public void complete(HttpChunk chunk);
+  public void writeChunk(HttpChunk chunk);
 
   public void abort();
 

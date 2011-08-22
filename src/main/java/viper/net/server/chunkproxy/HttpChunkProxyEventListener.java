@@ -6,8 +6,12 @@ import java.util.EventListener;
 
 public interface HttpChunkProxyEventListener extends EventListener
 {
-  void onProxyReady();
-  void onProxyPaused();
+  void onProxyConnected();
+
+  void onProxyWriteReady();
+  void onProxyWritePaused();
+
   void onProxyCompleted();
+
   void onProxyError();
 }

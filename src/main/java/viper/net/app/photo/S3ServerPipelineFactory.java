@@ -17,6 +17,7 @@ package viper.net.app.photo;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import org.jboss.netty.channel.ChannelHandler;
@@ -78,6 +79,7 @@ public class S3ServerPipelineFactory implements ChannelPipelineFactory
     HttpChunkRelayProxy proxy;
 
     String rootPath = "src/main/resources/public";
+    new File(rootPath).mkdir();
 
     proxy =
       new S3StandardChunkProxy(

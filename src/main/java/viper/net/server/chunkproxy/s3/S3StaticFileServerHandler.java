@@ -35,6 +35,7 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
+import viper.net.server.Util;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
@@ -63,7 +64,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     init,
     connected,
     relay,
-    complete,
     closed
   }
 
@@ -87,7 +87,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     _remotePort = remotePort;
   }
 
-  private void connect()
+  private void connect(final ChannelHandlerContext ctx)
   {
     ClientBootstrap cb = new ClientBootstrap(_cf);
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
@@ -124,7 +124,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
               }
               else
               {
-//                sendError();
+                sendError(ctx, INTERNAL_SERVER_ERROR);
                 closeS3Channel();
               }
             }
@@ -152,7 +152,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     _request = (HttpRequest) e.getMessage();
 
     String uri = _request.getUri();
-    final String path = sanitizeUri(uri);
+    final String path = Util.sanitizeUri(uri);
     if (path == null)
     {
       sendError(ctx, FORBIDDEN);
@@ -170,7 +170,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
     _state = State.init;
 
-    connect();
+    connect(ctx);
   }
 
   @Override
@@ -196,45 +196,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
       _s3Channel.close();
       _s3Channel = null;
     }
-  }
-
-  private String sanitizeUri(String uri)
-    throws URISyntaxException
-  {
-    // Decode the path.
-    try
-    {
-      uri = URLDecoder.decode(uri, "UTF-8");
-    }
-    catch (UnsupportedEncodingException e)
-    {
-      try
-      {
-        uri = URLDecoder.decode(uri, "ISO-8859-1");
-      }
-      catch (UnsupportedEncodingException e1)
-      {
-        throw new Error();
-      }
-    }
-
-    // Convert file separators.
-    uri = uri.replace(File.separatorChar, '/');
-
-    // Simplistic dumb security check.
-    // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + ".")
-          || uri.contains("." + File.separator)
-          || uri.startsWith(".")
-          || uri.endsWith("."))
-    {
-      return null;
-    }
-
-    QueryStringDecoder decoder = new QueryStringDecoder(uri);
-    uri = decoder.getPath();
-
-    return uri;
   }
 
   private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
@@ -296,7 +257,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
         }
         else
         {
-          // sendError();
+          sendError(ctx, INTERNAL_SERVER_ERROR);
           closeS3Channel();
         }
       }
@@ -310,7 +271,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
           public void operationComplete(ChannelFuture future)
               throws Exception
           {
-            if (future.isSuccess())
+            if (!future.isSuccess())
             {
               closeS3Channel();
             }

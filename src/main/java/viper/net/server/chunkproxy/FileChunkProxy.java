@@ -30,7 +30,6 @@ public class FileChunkProxy implements HttpChunkRelayProxy
   public FileChunkProxy(String rootDir)
   {
     _rootDir = rootDir;
-    new File(rootDir).mkdir();
   }
 
   @Override
@@ -63,13 +62,15 @@ public class FileChunkProxy implements HttpChunkRelayProxy
     _raf = new RandomAccessFile(_filePath, "rw");
     _raf.setLength(objectSize);
     _fileChannel = _raf.getChannel();
+
     _state = State.relay;
 
-    _listener.onProxyReady();
+    _listener.onProxyConnected();
+    _listener.onProxyWriteReady();
   }
 
   @Override
-  public void appendChunk(HttpChunk chunk)
+  public void writeChunk(HttpChunk chunk)
   {
     if (!_state.equals(State.relay))
     {
@@ -78,30 +79,18 @@ public class FileChunkProxy implements HttpChunkRelayProxy
 
     try
     {
-      _fileChannel.write(chunk.getContent().toByteBuffer());
-    }
-    catch (IOException e)
-    {
-      _listener.onProxyError();
-      abort();
-    }
-  }
-
-  @Override
-  public void complete(HttpChunk chunk)
-  {
-    if (!_state.equals(State.relay))
-    {
-      throw new IllegalStateException("init must be called first");
-    }
-
-    try
-    {
-      _fileChannel.write(chunk.getContent().toByteBuffer());
-      _fileChannel.close();
-      _state = State.closed;
-      _listener.onProxyCompleted();
-      reset();
+      if (chunk.isLast())
+      {
+        _fileChannel.write(chunk.getContent().toByteBuffer());
+        _fileChannel.close();
+        _state = State.closed;
+        _listener.onProxyCompleted();
+        reset();
+      }
+      else
+      {
+        _fileChannel.write(chunk.getContent().toByteBuffer());
+      }
     }
     catch (IOException e)
     {

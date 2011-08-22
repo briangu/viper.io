@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -30,9 +29,6 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
-import org.jboss.netty.handler.codec.rtsp.RtspRequestEncoder;
-import org.jboss.netty.handler.codec.rtsp.RtspResponseDecoder;
-import viper.net.common.HttpResponseLoggingHandler;
 import viper.net.server.chunkproxy.HttpChunkProxyEventListener;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 
@@ -95,7 +91,8 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
         if (future.isSuccess())
         {
           _state = State.connected;
-          _listener.onProxyReady();
+          _listener.onProxyConnected();
+          _listener.onProxyWriteReady();
         }
         else
         {
@@ -126,32 +123,41 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     _objectMeta = meta;
     _objectSize = objectSize;
 
-    _listener.onProxyPaused();
+    _listener.onProxyWritePaused();
 
     connect();
   }
 
-  @Override
-  public void appendChunk(HttpChunk chunk)
+  private HttpRequest buildRequest(HttpChunk chunk)
   {
+    Map<String, List<String>> headers = new HashMap<String, List<String>>();
+//    headers.put("x-amz-acl", Arrays.asList("public-read"));
+    headers.put("x-amz-meta-filename", Arrays.asList(_objectMeta.get("filename")));
+    headers.put(HttpHeaders.Names.CONTENT_LENGTH, Arrays.asList(Long.toString(_objectSize)));
+    headers.put(HttpHeaders.Names.CONTENT_TYPE, Arrays.asList(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE)));
+    S3Object object = new S3Object(null, new HashMap<String, List<String>>());
+    String uri = _s3AuthGenerator.put(_bucketName, _bucketKey, object, headers);
+
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.PUT, uri);
+    for (String headerKey : headers.keySet())
+    {
+      request.setHeader(headerKey, headers.get(headerKey).get(0));
+    }
+    request.setContent(chunk.getContent());
+
+    return request;
+  }
+
+  @Override
+  public void writeChunk(final HttpChunk chunk)
+  {
+    if (_s3Channel == null) return;
+
     if (_state.equals(State.connected))
     {
-      Map<String, List<String>> headers = new HashMap<String, List<String>>();
-      headers.put("x-amz-acl", Arrays.asList("public-read"));
-      headers.put("x-amz-meta-filename", Arrays.asList(_objectMeta.get("filename")));
-      headers.put(HttpHeaders.Names.CONTENT_LENGTH, Arrays.asList(Long.toString(_objectSize)));
-      headers.put(HttpHeaders.Names.CONTENT_TYPE, Arrays.asList(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE)));
-      S3Object object = new S3Object(null, new HashMap<String, List<String>>());
-      String uri = _s3AuthGenerator.put(_bucketName, _bucketKey, object, headers);
+      HttpRequest request = buildRequest(chunk);
 
-      HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.PUT, uri);
-      for (String headerKey : headers.keySet())
-      {
-        request.setHeader(headerKey, headers.get(headerKey).get(0));
-      }
-      request.setContent(chunk.getContent());
-
-      _listener.onProxyPaused();
+      _listener.onProxyWritePaused();
 
       ChannelFuture f = _s3Channel.write(request);
       f.addListener(new ChannelFutureListener()
@@ -162,8 +168,16 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
         {
           if (channelFuture.isSuccess())
           {
-            _state = State.relay;
-            _listener.onProxyReady();
+            if (chunk.isLast())
+            {
+              _state = State.complete;
+              _listener.onProxyCompleted();
+            }
+            else
+            {
+              _state = State.relay;
+              _listener.onProxyWriteReady();
+            }
           }
           else
           {
@@ -175,43 +189,43 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     }
     else if (_state.equals(State.relay))
     {
-      _s3Channel.write(chunk.getContent());
-    }
-
-    if (!_s3Channel.isWritable())
-    {
-      _listener.onProxyPaused();
-    }
-  }
-
-  @Override
-  public void complete(HttpChunk chunk)
-  {
-    _state = State.complete;
-
-    if (chunk == null) return;
-
-    ChannelFuture f = _s3Channel.write(chunk.getContent());
-    f.addListener(new ChannelFutureListener()
-    {
-      @Override
-      public void operationComplete(ChannelFuture future)
-          throws Exception
+      ChannelFuture f = _s3Channel.write(chunk.getContent());
+      f.addListener(new ChannelFutureListener()
       {
-        if (!future.isSuccess())
+        @Override
+        public void operationComplete(ChannelFuture future)
+          throws Exception
         {
-          _listener.onProxyError();
-          closeS3Channel();
+          if (future.isSuccess())
+          {
+            if (chunk.isLast())
+            {
+              _state = State.complete;
+              _listener.onProxyCompleted();
+            }
+          }
+          else
+          {
+            _listener.onProxyError();
+            closeS3Channel();
+          }
         }
+      });
+    }
+
+    if (_s3Channel != null)
+    {
+      if (!_s3Channel.isWritable())
+      {
+        _listener.onProxyWritePaused();
       }
-    });
+    }
   }
 
   @Override
   public void abort()
   {
-    _state = State.closed;
-    _s3Channel.close();
+    closeS3Channel();
   }
 
   private class S3ResponseHandler extends SimpleChannelUpstreamHandler
@@ -236,8 +250,6 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
 
       HttpResponse m = (HttpResponse)obj;
 
-      System.out.println("response in current state: " + _state);
-
       if (!m.getStatus().equals(HttpResponseStatus.OK))
       {
         closeS3Channel();
@@ -253,7 +265,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
       // the incoming traffic from the inboundChannel.
       if (e.getChannel().isWritable())
       {
-        _listener.onProxyReady();
+        _listener.onProxyWriteReady();
       }
     }
 

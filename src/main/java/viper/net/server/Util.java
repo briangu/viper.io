@@ -3,7 +3,11 @@ package viper.net.server;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.UUID;
 import javax.activation.MimetypesFileTypeMap;
@@ -11,6 +15,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.base64.Base64;
 import org.jboss.netty.handler.codec.base64.Base64Dialect;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
 
 
@@ -87,5 +92,44 @@ public class Util
     }
 
     return null;
+  }
+
+  public static String sanitizeUri(String uri)
+    throws URISyntaxException
+  {
+    // Decode the path.
+    try
+    {
+      uri = URLDecoder.decode(uri, "UTF-8");
+    }
+    catch (UnsupportedEncodingException e)
+    {
+      try
+      {
+        uri = URLDecoder.decode(uri, "ISO-8859-1");
+      }
+      catch (UnsupportedEncodingException e1)
+      {
+        throw new Error();
+      }
+    }
+
+    // Convert file separators.
+    uri = uri.replace(File.separatorChar, '/');
+
+    // Simplistic dumb security check.
+    // You will have to do something serious in the production environment.
+    if (uri.contains(File.separator + ".")
+        || uri.contains("." + File.separator)
+        || uri.startsWith(".")
+        || uri.endsWith("."))
+    {
+      return null;
+    }
+
+    QueryStringDecoder decoder = new QueryStringDecoder(uri);
+    uri = decoder.getPath();
+
+    return uri;
   }
 }
