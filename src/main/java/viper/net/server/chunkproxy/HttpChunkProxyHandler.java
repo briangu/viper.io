@@ -12,7 +12,6 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
@@ -23,7 +22,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
 {
 
   private volatile HttpMessage _currentMessage;
-  private volatile Channel _inboundChannel;
+  private volatile Channel _destChannel;
   private final int _maxContentLength;
   private int _currentByteCount;
   private final HttpChunkRelayProxy _chunkRelayProxy;
@@ -71,7 +70,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
       {
         _currentMessage = m;
         _currentByteCount = 0;
-        _inboundChannel = e.getChannel();
+        _destChannel = e.getChannel();
 
         _chunkRelayProxy.init(
           new HttpChunkProxyEventListener() {
@@ -84,27 +83,27 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
             @Override
             public void onProxyWriteReady()
             {
-              _inboundChannel.setReadable(true);
+              _destChannel.setReadable(true);
             }
 
             @Override
             public void onProxyWritePaused()
             {
-              _inboundChannel.setReadable(false);
+              _destChannel.setReadable(false);
             }
 
             @Override
             public void onProxyCompleted()
             {
-              _relayListener.onCompleted(_inboundChannel);
+              _relayListener.onCompleted(_destChannel);
             }
 
             @Override
             public void onProxyError()
             {
-              if (_inboundChannel != null)
+              if (_destChannel != null)
               {
-                _inboundChannel.setReadable(false);
+                _destChannel.setReadable(false);
               }
               if (_currentMessage != null)
               {
@@ -119,6 +118,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
       else
       {
         final HttpChunk singleChunk = new LastHttpChunk(m.getContent());
+        final Channel destChannel = e.getChannel();
 
         _chunkRelayProxy.init(
           new HttpChunkProxyEventListener() {
@@ -142,7 +142,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
             @Override
             public void onProxyCompleted()
             {
-              _relayListener.onCompleted(_inboundChannel);
+              _relayListener.onCompleted(destChannel);
             }
 
             @Override
@@ -164,8 +164,8 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
       {
         _currentMessage.setHeader(HttpHeaders.Names.WARNING, "maxContentLength exceeded");
         _chunkRelayProxy.abort();
-        _inboundChannel.setReadable(false);
-        _relayListener.onError(_inboundChannel);
+        _destChannel.setReadable(false);
+        _relayListener.onError(_destChannel);
       }
       else
       {
@@ -194,7 +194,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
   {
     e.getCause().printStackTrace();
 
-    _relayListener.onError(_inboundChannel);
+    _relayListener.onError(_destChannel);
 
     if (_chunkRelayProxy.isRelaying())
     {
