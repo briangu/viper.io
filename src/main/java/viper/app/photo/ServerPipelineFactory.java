@@ -19,9 +19,9 @@ import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
-import viper.net.server.router.Matcher;
+import viper.net.server.router.RouteMatcher;
 import viper.net.server.router.RouterHandler;
-import viper.net.server.router.UriStartsWithMatcher;
+import viper.net.server.router.UriStartsWithRouteMatcher;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -76,13 +76,13 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 
     FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
-    ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>> routes =
-      new ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>>();
+    ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> routes =
+      new ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>>();
 
-    LinkedHashMap<Matcher, ChannelHandler> localhostRoutes = new LinkedHashMap<Matcher, ChannelHandler>();
-    localhostRoutes.put(new UriStartsWithMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-    localhostRoutes.put(new UriStartsWithMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
-    localhostRoutes.put(new UriStartsWithMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
+    LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
+    localhostRoutes.put(new UriStartsWithRouteMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+    localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
+    localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
     routes.put(_localHost, localhostRoutes);
 

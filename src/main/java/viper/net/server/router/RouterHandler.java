@@ -22,12 +22,12 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
   private final String _handlerName;
 
-  ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>> _routes =
-    new ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>>();
+  ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> _routes =
+    new ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>>();
 
   public RouterHandler(
     String handlerName,
-    ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>> routes)
+    ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> routes)
   {
     _handlerName = handlerName;
     _routes = routes;
@@ -57,7 +57,7 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
     if (_routes.containsKey(host))
     {
-      for (Map.Entry<Matcher, ChannelHandler> m : _routes.get(host).entrySet())
+      for (Map.Entry<RouteMatcher, ChannelHandler> m : _routes.get(host).entrySet())
       {
         if (!m.getKey().match(request)) continue;
         setHandler(ctx.getPipeline(), m.getValue());

@@ -4,11 +4,11 @@ package viper.net.server.router;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
 
-public class UriEndsWithMatcher implements Matcher
+public class UriEndsWithRouteMatcher implements RouteMatcher
 {
   private String route;
 
-  public UriEndsWithMatcher(String route)
+  public UriEndsWithRouteMatcher(String route)
   {
     this.route = route;
   }
