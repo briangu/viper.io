@@ -1,4 +1,4 @@
-package com.sun.jersey.server.impl.container.netty;
+package viper.net.server;
 
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
@@ -23,18 +23,17 @@ import java.util.ArrayList;
 /**
  * @author Carl Bystrm
  */
-public class NettyHandlerContainer extends SimpleChannelUpstreamHandler
+public class JerseyContainerHandler extends SimpleChannelUpstreamHandler
 {
 	public static final String PROPERTY_BASE_URI = "com.sun.jersey.server.impl.container.netty.baseUri";
 
-	private WebApplication application;
-	private String baseUri;
+	private WebApplication _application;
+	private String _baseUri;
 
-
-	public NettyHandlerContainer(WebApplication application, ResourceConfig resourceConfig)
+	public JerseyContainerHandler(WebApplication application, ResourceConfig resourceConfig)
 	{
-		this.application = application;
-		this.baseUri = (String)resourceConfig.getProperty(PROPERTY_BASE_URI);
+		_application = application;
+		_baseUri = (String)resourceConfig.getProperty(PROPERTY_BASE_URI);
 	}
 
 	private final static class Writer implements ContainerResponseWriter
@@ -80,8 +79,7 @@ public class NettyHandlerContainer extends SimpleChannelUpstreamHandler
 		final URI baseUri = new URI(base);
 		final URI requestUri = new URI(base.substring(0, base.length() - 1) + request.getUri());
 
-		final ContainerRequest cRequest = new ContainerRequest(
-				application,
+		final ContainerRequest cRequest = new ContainerRequest(_application,
 				request.getMethod().getName(),
 				baseUri,
 				requestUri,
@@ -89,14 +87,14 @@ public class NettyHandlerContainer extends SimpleChannelUpstreamHandler
 				new ChannelBufferInputStream(request.getContent())
 			);
 
-		application.handleRequest(cRequest, new Writer(e.getChannel()));
+		_application.handleRequest(cRequest, new Writer(e.getChannel()));
 	}
 
 	private String getBaseUri(HttpRequest request)
 	{
-		if (baseUri != null)
+		if (_baseUri != null)
 		{
-			return baseUri;
+			return _baseUri;
 		}
 
 		return "http://" + request.getHeader(HttpHeaders.Names.HOST) + "/";

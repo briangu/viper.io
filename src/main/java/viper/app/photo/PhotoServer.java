@@ -43,7 +43,7 @@ public class PhotoServer
 
     ServerPipelineFactory factory =
       new ServerPipelineFactory(
-        port,
+        String.format("localhost:%s", port),
         authGenerator,
         bucketName,
         cf,

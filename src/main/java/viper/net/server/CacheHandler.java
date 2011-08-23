@@ -31,30 +31,36 @@ public class CacheHandler extends SimpleChannelHandler
     {
       HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
 
-      if (request.containsHeader("Host") && _cache.contains(request.getHeader("Host")))
+      if (request.containsHeader(HttpHeaders.Names.HOST))
       {
-        ConcurrentHashMap<String, CacheEntry> hostCache = _cache.get(request.getUri());
+        String host = request.getHeader(HttpHeaders.Names.HOST);
 
-        CacheEntry ce = hostCache.get(request.getUri());
-        if (ce != null)
+        if (_cache.containsKey(host))
         {
-          if (ce.expires > System.currentTimeMillis())
+          ConcurrentHashMap<String, CacheEntry> hostCache = _cache.get(host);
+
+          if (hostCache.containsKey(request.getUri()))
           {
-            ChannelFuture f = e.getChannel().write(ce.content);
-            if (!HttpHeaders.isKeepAlive(request))
+            CacheEntry ce = hostCache.get(request.getUri());
+
+            if (ce.expires > System.currentTimeMillis())
             {
-              f.addListener(ChannelFutureListener.CLOSE);
+              ChannelFuture f = e.getChannel().write(ce.content);
+              if (!HttpHeaders.isKeepAlive(request))
+              {
+                f.addListener(ChannelFutureListener.CLOSE);
+              }
+              return;
             }
-            return;
-          }
-          else
-          {
-            if (ce.content instanceof CachableHttpResponse)
+            else
             {
-              CachableHttpResponse r = (CachableHttpResponse) ce.content;
-              r.dispose();
+              if (ce.content instanceof CachableHttpResponse)
+              {
+                CachableHttpResponse r = (CachableHttpResponse) ce.content;
+                r.dispose();
+              }
+              hostCache.remove(ce);
             }
-            _cache.remove(ce);
           }
         }
       }
@@ -75,7 +81,7 @@ public class CacheHandler extends SimpleChannelHandler
       {
         String host = r.getHost();
 
-        if (!_cache.contains(host))
+        if (!_cache.containsKey(host))
         {
           _cache.put(host, new ConcurrentHashMap<String, CacheEntry>());
         }

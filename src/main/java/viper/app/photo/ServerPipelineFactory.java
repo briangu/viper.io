@@ -29,7 +29,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 {
   Set<ChannelHandlerContext> _listeners;
 
-  private final int _localPort;
+  private final String _localHost;
   private final QueryStringAuthGenerator _authGenerator;
   private final ClientSocketChannelFactory _cf;
   private final String _remoteHost;
@@ -38,7 +38,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
   private final String _bucketName;
   private final String _staticFileRoot;
 
-  public ServerPipelineFactory(int port,
+  public ServerPipelineFactory(String localHost,
                                QueryStringAuthGenerator authGenerator,
                                String bucketName,
                                ClientSocketChannelFactory cf,
@@ -48,7 +48,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
                                Set<ChannelHandlerContext> listeners,
                                String staticFileRoot)
   {
-    _localPort = port;
+    _localHost = localHost;
     _authGenerator = authGenerator;
     _bucketName = bucketName;
     _listeners = listeners;
@@ -79,12 +79,12 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
     ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>> routes =
       new ConcurrentHashMap<String, LinkedHashMap<Matcher, ChannelHandler>>();
 
-    LinkedHashMap<Matcher, ChannelHandler> localhost = new LinkedHashMap<Matcher, ChannelHandler>();
-    localhost.put(new UriStartsWithMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-    localhost.put(new UriStartsWithMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
-    localhost.put(new UriStartsWithMatcher("/"), new StaticFileServerHandler(_staticFileRoot));
+    LinkedHashMap<Matcher, ChannelHandler> localhostRoutes = new LinkedHashMap<Matcher, ChannelHandler>();
+    localhostRoutes.put(new UriStartsWithMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+    localhostRoutes.put(new UriStartsWithMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
+    localhostRoutes.put(new UriStartsWithMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    routes.put(String.format("localhost:%s", _localPort), localhost);
+    routes.put(_localHost, localhostRoutes);
 
     RouterHandler routerHandler = new RouterHandler("uri-handlers", routes);
 

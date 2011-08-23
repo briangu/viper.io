@@ -8,6 +8,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
 import java.util.LinkedHashMap;
@@ -44,13 +45,13 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
     HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
 
-    if (!request.containsHeader("Host"))
+    if (!request.containsHeader(HttpHeaders.Names.HOST))
     {
       ctx.getPipeline().addLast(_handlerName, HANDLER_404);
       return;
     }
 
-    String host = request.getHeader("Host");
+    String host = request.getHeader(HttpHeaders.Names.HOST);
 
     boolean matchFound = false;
 
