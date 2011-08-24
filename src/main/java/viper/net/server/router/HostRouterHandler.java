@@ -21,6 +21,8 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler
 
   ConcurrentHashMap<String, ChannelPipeline> _routes = new ConcurrentHashMap<String, ChannelPipeline>();
 
+  private volatile ChannelPipeline _lastPipeline = null;
+
   public HostRouterHandler(ConcurrentHashMap<String, ChannelPipeline> routes)
   {
     _routes = routes;
@@ -53,25 +55,29 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler
     {
       hostPipeline = _routes.get(host);
     }
-
-    if (hostPipeline == null)
+    else
     {
       setHandler(ctx.getPipeline(), "404-error", HANDLER_404);
       super.handleUpstream(ctx, e);
       return;
     }
 
-    ChannelPipeline mainPipeline = ctx.getPipeline();
-
-    while (mainPipeline.getLast() != this)
+    if (_lastPipeline != hostPipeline)
     {
-      mainPipeline.removeLast();
+      ChannelPipeline mainPipeline = ctx.getPipeline();
+
+      while (mainPipeline.getLast() != this)
+      {
+        mainPipeline.removeLast();
+      }
+
+      for (String name : hostPipeline.getNames())
+      {
+        mainPipeline.addLast(name, hostPipeline.get(name));
+      }
     }
 
-    for (String name : hostPipeline.getNames())
-    {
-      mainPipeline.addLast(name, hostPipeline.get(name));
-    }
+    _lastPipeline = hostPipeline;
 
     super.handleUpstream(ctx, e);
   }

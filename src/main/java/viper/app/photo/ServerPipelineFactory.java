@@ -3,8 +3,11 @@ package viper.app.photo;
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.netty.channel.ChannelHandler;
@@ -86,7 +89,17 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
     lhPipeline.addLast("router", new RouterHandler("uri-handlers", localhostRoutes));
 
     ConcurrentHashMap<String, ChannelPipeline> routes = new ConcurrentHashMap<String, ChannelPipeline>();
-    routes.put(String.format("%s:%s", _localHost.getHost(), _localHost.getPort()), lhPipeline);
+
+    List<String> localhostNames = new ArrayList<String>();
+    localhostNames.add(_localHost.getHost());
+    localhostNames.add(InetAddress.getLocalHost().getHostName());
+    localhostNames.add(InetAddress.getLocalHost().getHostName().substring(0, InetAddress.getLocalHost().getHostName().indexOf(".")));
+    localhostNames.add(InetAddress.getLocalHost().getCanonicalHostName());
+
+    for (String hostname : localhostNames)
+    {
+      routes.put(String.format("%s:%s", hostname, _localHost.getPort()), lhPipeline);
+    }
 
     HostRouterHandler hostRouterHandler = new HostRouterHandler(routes);
 
@@ -97,6 +110,4 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 
     return pipeline;
   }
-
-
 }
