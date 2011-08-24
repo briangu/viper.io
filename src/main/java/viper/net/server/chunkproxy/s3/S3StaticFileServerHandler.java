@@ -5,6 +5,7 @@ import com.amazon.s3.QueryStringAuthGenerator;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -51,8 +52,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private final String _bucketName;
 
   private final ClientSocketChannelFactory _cf;
-  private final String _remoteHost;
-  private final int _remotePort;
+  private final URI _amazonHost;
   private Channel _s3Channel;
 
   private HttpRequest _request;
@@ -77,14 +77,12 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     QueryStringAuthGenerator s3AuthGenerator,
     String bucketName,
     ClientSocketChannelFactory cf,
-    String remoteHost,
-    int remotePort)
+    URI amazonHost)
   {
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
     _cf = cf;
-    _remoteHost = remoteHost;
-    _remotePort = remotePort;
+    _amazonHost = amazonHost;
   }
 
   private void connect(final ChannelHandlerContext ctx)
@@ -93,7 +91,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
     cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_destChannel));
-    ChannelFuture f = cb.connect(new InetSocketAddress(_remoteHost, _remotePort));
+    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost.getHost(), _amazonHost.getPort()));
 
     _s3Channel = f.getChannel();
     f.addListener(new ChannelFutureListener()

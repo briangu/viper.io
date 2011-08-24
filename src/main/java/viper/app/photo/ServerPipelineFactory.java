@@ -78,7 +78,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 
     LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
     localhostRoutes.put(new UriStartsWithRouteMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-    localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
+    localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
     localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
     routes.put(String.format("%s:%s", _localHost.getHost(), _localHost.getPort()), localhostRoutes);
