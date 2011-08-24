@@ -1,6 +1,9 @@
 package viper.app.photo;
 
 
+import java.net.URISyntaxException;
+
+
 public class Main
 {
   public static void main(String[] args)
@@ -9,6 +12,13 @@ public class Main
     String awsSecret = args[1];
     String bucketName = args[2];
 
-    PhotoServer photoServer = PhotoServer.create(18080, awsId, awsSecret, bucketName);
+    try
+    {
+      PhotoServer photoServer = PhotoServer.create(18080, awsId, awsSecret, bucketName);
+    }
+    catch (URISyntaxException e)
+    {
+      e.printStackTrace();
+    }
   }
 }

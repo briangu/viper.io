@@ -22,12 +22,11 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
   private final String _handlerName;
 
-  ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> _routes =
-    new ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>>();
+  LinkedHashMap<RouteMatcher, ChannelHandler> _routes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
 
   public RouterHandler(
     String handlerName,
-    ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> routes)
+    LinkedHashMap<RouteMatcher, ChannelHandler> routes)
   {
     _handlerName = handlerName;
     _routes = routes;
@@ -45,25 +44,14 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
     HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
 
-    if (!request.containsHeader(HttpHeaders.Names.HOST))
-    {
-      ctx.getPipeline().addLast(_handlerName, HANDLER_404);
-      return;
-    }
-
-    String host = request.getHeader(HttpHeaders.Names.HOST);
-
     boolean matchFound = false;
 
-    if (_routes.containsKey(host))
+    for (Map.Entry<RouteMatcher, ChannelHandler> m : _routes.entrySet())
     {
-      for (Map.Entry<RouteMatcher, ChannelHandler> m : _routes.get(host).entrySet())
-      {
-        if (!m.getKey().match(request)) continue;
-        setHandler(ctx.getPipeline(), m.getValue());
-        matchFound = true;
-        break;
-      }
+      if (!m.getKey().match(request)) continue;
+      setHandler(ctx.getPipeline(), m.getValue());
+      matchFound = true;
+      break;
     }
 
     if (!matchFound)

@@ -3,6 +3,8 @@ package viper.app.photo;
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
@@ -22,6 +24,7 @@ public class PhotoServer
                                    String awsId,
                                    String awsSecret,
                                    String bucketName)
+    throws URISyntaxException
   {
     Set<ChannelHandlerContext> listeners = new CopyOnWriteArraySet<ChannelHandlerContext>();
 
@@ -43,12 +46,11 @@ public class PhotoServer
 
     ServerPipelineFactory factory =
       new ServerPipelineFactory(
-        String.format("localhost:%s", port),
+        URI.create(String.format("http://localhost:%s", port)),
         authGenerator,
         bucketName,
         cf,
-        remoteHost,
-        80,
+        URI.create(String.format("http://%s:%s", remoteHost, 80)),
         (1024*1024)*1024,
         listeners,
         "src/main/resources/public");

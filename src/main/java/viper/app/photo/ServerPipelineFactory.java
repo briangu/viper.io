@@ -11,6 +11,7 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.DefaultChannelPipeline;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
@@ -20,6 +21,7 @@ import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
+import viper.net.server.router.HostRouterHandler;
 import viper.net.server.router.RouteMatcher;
 import viper.net.server.router.RouterHandler;
 import viper.net.server.router.UriStartsWithRouteMatcher;
@@ -39,8 +41,8 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
   private final String _staticFileRoot;
 
   public ServerPipelineFactory(URI localHost,
-                               QueryStringAuthGenerator authGenerator,
-                               String bucketName,
+                               QueryStringAuthGenerator s3AuthGenerator,
+                               String s3BucketName,
                                ClientSocketChannelFactory cf,
                                URI amazonHost,
                                int maxContentLength,
@@ -48,8 +50,8 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
                                String staticFileRoot)
   {
     _localHost = localHost;
-    _authGenerator = authGenerator;
-    _bucketName = bucketName;
+    _authGenerator = s3AuthGenerator;
+    _bucketName = s3BucketName;
     _listeners = listeners;
     _cf = cf;
     _amazonHost = amazonHost;
@@ -73,24 +75,28 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 
     FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
-    ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>> routes =
-      new ConcurrentHashMap<String, LinkedHashMap<RouteMatcher, ChannelHandler>>();
-
     LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
     localhostRoutes.put(new UriStartsWithRouteMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
     localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
     localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    routes.put(String.format("%s:%s", _localHost.getHost(), _localHost.getPort()), localhostRoutes);
 
-    RouterHandler routerHandler = new RouterHandler("uri-handlers", routes);
+    ChannelPipeline lhPipeline = new DefaultChannelPipeline();
+    lhPipeline.addLast("cache", new CacheHandler());
+    lhPipeline.addLast("router", new RouterHandler("uri-handlers", localhostRoutes));
+
+    ConcurrentHashMap<String, ChannelPipeline> routes = new ConcurrentHashMap<String, ChannelPipeline>();
+    routes.put(String.format("%s:%s", _localHost.getHost(), _localHost.getPort()), lhPipeline);
+
+    HostRouterHandler hostRouterHandler = new HostRouterHandler(routes);
 
     ChannelPipeline pipeline = pipeline();
     pipeline.addLast("decoder", new HttpRequestDecoder());
     pipeline.addLast("encoder", new HttpResponseEncoder());
-    pipeline.addLast("cache", new CacheHandler());
-    pipeline.addLast("router", routerHandler);
+    pipeline.addLast("hostrouter", hostRouterHandler);
 
     return pipeline;
   }
+
+
 }
