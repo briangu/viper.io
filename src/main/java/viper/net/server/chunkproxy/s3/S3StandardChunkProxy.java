@@ -4,6 +4,7 @@ package viper.net.server.chunkproxy.s3;
 import com.amazon.s3.QueryStringAuthGenerator;
 import com.amazon.s3.S3Object;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -44,8 +45,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   private long _objectSize;
 
   private final ClientSocketChannelFactory _cf;
-  private final String _remoteHost;
-  private final int _remotePort;
+  private final URI _amazonHost;
   private volatile Channel _s3Channel;
 
   private enum State
@@ -63,14 +63,12 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   public S3StandardChunkProxy(QueryStringAuthGenerator s3AuthGenerator,
                               String bucketName,
                               ClientSocketChannelFactory cf,
-                              String remoteHost,
-                              int remotePort)
+                              URI amazonHost)
   {
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
     _cf = cf;
-    _remoteHost = remoteHost;
-    _remotePort = remotePort;
+    _amazonHost = amazonHost;
   }
 
   private void connect()
@@ -79,7 +77,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
     cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_listener));
-    ChannelFuture f = cb.connect(new InetSocketAddress(_remoteHost, _remotePort));
+    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost.getHost(), _amazonHost.getPort()));
 
     _s3Channel = f.getChannel();
     f.addListener(new ChannelFutureListener()

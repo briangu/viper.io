@@ -3,6 +3,7 @@ package viper.app.photo;
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import java.io.File;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,21 +30,19 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
 {
   Set<ChannelHandlerContext> _listeners;
 
-  private final String _localHost;
+  private final URI _localHost;
   private final QueryStringAuthGenerator _authGenerator;
   private final ClientSocketChannelFactory _cf;
-  private final String _remoteHost;
-  private final int _remotePort;
+  private final URI _amazonHost;
   private final int _maxContentLength;
   private final String _bucketName;
   private final String _staticFileRoot;
 
-  public ServerPipelineFactory(String localHost,
+  public ServerPipelineFactory(URI localHost,
                                QueryStringAuthGenerator authGenerator,
                                String bucketName,
                                ClientSocketChannelFactory cf,
-                               String remoteHost,
-                               int remotePort,
+                               URI amazonHost,
                                int maxContentLength,
                                Set<ChannelHandlerContext> listeners,
                                String staticFileRoot)
@@ -53,8 +52,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
     _bucketName = bucketName;
     _listeners = listeners;
     _cf = cf;
-    _remoteHost = remoteHost;
-    _remotePort = remotePort;
+    _amazonHost = amazonHost;
     _maxContentLength = maxContentLength;
     _staticFileRoot = staticFileRoot;
   }
@@ -71,8 +69,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
         _authGenerator,
         _bucketName,
         _cf,
-        _remoteHost,
-        _remotePort);
+        _amazonHost);
 
     FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
@@ -84,7 +81,7 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
     localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _remoteHost, _remotePort));
     localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
-    routes.put(_localHost, localhostRoutes);
+    routes.put(String.format("%s:%s", _localHost.getHost(), _localHost.getPort()), localhostRoutes);
 
     RouterHandler routerHandler = new RouterHandler("uri-handlers", routes);
 
