@@ -30,7 +30,6 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import viper.net.server.CachableHttpResponse;
 import viper.net.server.Util;
 
 

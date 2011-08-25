@@ -17,7 +17,6 @@ import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.omg.CosNaming.NamingContextExtPackage.StringNameHelper;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
 import viper.net.server.chunkproxy.StaticFileServerHandler;
@@ -26,7 +25,7 @@ import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
 import viper.net.server.router.HostRouterHandler;
 import viper.net.server.router.RouteMatcher;
 import viper.net.server.router.RouterHandler;
-import viper.net.server.router.UriStartsWithRouteMatcher;
+import viper.net.server.router.UriRouteMatcher;
 
 
 public class PhotoServer
@@ -152,9 +151,9 @@ public class PhotoServer
       FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
       LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
-      localhostRoutes.put(new UriStartsWithRouteMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-      localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
-      localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
 
       ChannelPipeline lhPipeline = new DefaultChannelPipeline();
