@@ -67,8 +67,6 @@ public class ServerPipelineFactory implements ChannelPipelineFactory
   {
     HttpChunkRelayProxy proxy;
 
-    new File(_staticFileRoot).mkdir();
-
     proxy =
       new S3StandardChunkProxy(
         _authGenerator,

@@ -2,6 +2,7 @@ package viper.app.photo;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,6 +15,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.omg.CosNaming.NamingContextExtPackage.StringNameHelper;
 
 
 public class PhotoServer
@@ -37,12 +39,15 @@ public class PhotoServer
           Executors.newCachedThreadPool()));
 
     Executor executor = Executors.newCachedThreadPool();
-    ClientSocketChannelFactory cf =
-            new NioClientSocketChannelFactory(executor, executor);
+    ClientSocketChannelFactory cf = new NioClientSocketChannelFactory(executor, executor);
 
     QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret, false);
 
     String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
+
+    String staticFileRoot = "src/main/resources/public";
+
+    new File(staticFileRoot).mkdir();
 
     ServerPipelineFactory factory =
       new ServerPipelineFactory(
@@ -53,7 +58,7 @@ public class PhotoServer
         URI.create(String.format("http://%s:%s", remoteHost, 80)),
         (1024*1024)*1024,
         listeners,
-        "src/main/resources/public");
+        staticFileRoot);
 
     // Set up the event pipeline factory.
     photoServer._bootstrap.setPipelineFactory(factory);
