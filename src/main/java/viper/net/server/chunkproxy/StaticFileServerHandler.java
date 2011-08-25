@@ -171,10 +171,8 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     response.setContent(contentInfo.content);
     ChannelFuture writeFuture = e.getChannel().write(response);
 
-    // Decide whether to close the connection or not.
     if (!isKeepAlive(request))
     {
-      // Close the connection when the whole content is written out.
       writeFuture.addListener(ChannelFutureListener.CLOSE);
     }
   }
