@@ -41,6 +41,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.armedbear.lisp</groupId>
+      <artifactId>abcl</artifactId>
+      <version>0.25.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
       <version>1.8</version>
