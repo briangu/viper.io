@@ -71,9 +71,9 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler
       {
         mainPipeline.addLast(name, hostPipeline.get(name));
       }
-    }
 
-    _lastPipeline = hostPipeline;
+      _lastPipeline = hostPipeline;
+    }
 
     super.handleUpstream(ctx, e);
   }

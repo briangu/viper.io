@@ -46,8 +46,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private boolean _fromClasspath = false;
 
   static ConcurrentHashMap<String, FileContentInfo> _fileCache = new ConcurrentHashMap<String, FileContentInfo>();
-
-  static File _indexFile = null;
+  static ConcurrentHashMap<String, File> _indexCache = new ConcurrentHashMap<String, File>();
 
   // TODO: add support for index.htm
 
@@ -67,11 +66,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       _rootPath = path;
     }
     _rootPath = _rootPath.replace(File.separatorChar, '/');
-
-    if (_indexFile == null)
-    {
-      _indexFile = getIndexFile(_rootPath);
-    }
   }
 
   private static File getIndexFile(String rootPath)
@@ -118,29 +112,32 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
 
     FileContentInfo contentInfo;
+    String host = request.getHeader(HttpHeaders.Names.HOST);
 
-    if (_fileCache.containsKey(path))
+    final String fileKey = String.format("%s_%s", host, path);
+
+    if (_fileCache.containsKey(fileKey))
     {
-      contentInfo = _fileCache.get(path);
+      contentInfo = _fileCache.get(fileKey);
     }
     else
     {
       synchronized (_fileCache)
       {
-        if (!_fileCache.containsKey(path))
+        if (!_fileCache.containsKey(fileKey))
         {
-          contentInfo = getFileContent(path);
+          contentInfo = getFileContent(host, path);
           if (contentInfo == null)
           {
             sendError(ctx, NOT_FOUND);
             return;
           }
 
-          _fileCache.put(path, contentInfo);
+          _fileCache.put(fileKey, contentInfo);
         }
         else
         {
-          contentInfo = _fileCache.get(path);
+          contentInfo = _fileCache.get(fileKey);
         }
       }
     }
@@ -171,7 +168,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
   }
 
-  private FileContentInfo getFileContent(String path)
+  private FileContentInfo getFileContent(String host, String path)
   {
     FileChannel fc = null;
     FileContentInfo result = null;
@@ -198,7 +195,17 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
       if (!file.exists() || path.equals("/"))
       {
-        file = path.equals("/") ? _indexFile : null;
+        if (!_indexCache.containsKey(host))
+        {
+          synchronized (_indexCache)
+          {
+            if (!_indexCache.containsKey(host))
+            {
+              _indexCache.put(host, getIndexFile(_rootPath));
+            }
+          }
+        }
+        file = path.equals("/") ? _indexCache.get(host) : null;
         if (file == null)
         {
           return null;

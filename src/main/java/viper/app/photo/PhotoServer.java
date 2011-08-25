@@ -81,7 +81,9 @@ public class PhotoServer
     return photoServer;
   }
 
-  static HostRouterHandler createHostRouterHandler(URI localHost, ChannelPipelineFactory lhPipelineFactory)
+  static HostRouterHandler createHostRouterHandler(
+    URI localHost,
+    ChannelPipelineFactory lhPipelineFactory)
   {
     ConcurrentHashMap<String, ChannelPipelineFactory> routes = new ConcurrentHashMap<String, ChannelPipelineFactory>();
 
@@ -109,6 +111,28 @@ public class PhotoServer
       }
       routes.put(String.format("%s:%s", hostname, localHost.getPort()), lhPipelineFactory);
     }
+
+    routes.put(String.format("%s:%s", "nebulous", localHost.getPort()), new ChannelPipelineFactory()
+    {
+      @Override
+      public ChannelPipeline getPipeline() throws Exception
+      {
+        return new DefaultChannelPipeline() {{
+          addLast("static", new StaticFileServerHandler("src/main/resources/public2"));
+        }};
+      }
+    });
+
+    routes.put(String.format("%s:%s", "amor", localHost.getPort()), new ChannelPipelineFactory()
+    {
+      @Override
+      public ChannelPipeline getPipeline() throws Exception
+      {
+        return new DefaultChannelPipeline() {{
+          addLast("static", new StaticFileServerHandler("src/main/resources/public3"));
+        }};
+      }
+    });
 
     return new HostRouterHandler(routes);
   }
