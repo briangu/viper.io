@@ -43,7 +43,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
   private String _rootPath;
   private String _stripFromUri;
-  private int _cacheMaxAge = -1;
   private boolean _fromClasspath = false;
 
   static ConcurrentHashMap<String, FileContentInfo> _fileCache = new ConcurrentHashMap<String, FileContentInfo>();
@@ -73,24 +72,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     {
       _indexFile = getIndexFile(_rootPath);
     }
-  }
-
-  public StaticFileServerHandler(String path, String stripFromUri)
-  {
-    this(path);
-    this._stripFromUri = stripFromUri;
-  }
-
-  public StaticFileServerHandler(String path, int cacheMaxAge)
-  {
-    this(path);
-    this._cacheMaxAge = cacheMaxAge;
-  }
-
-  public StaticFileServerHandler(String path, int cacheMaxAge, String stripFromUri)
-  {
-    this(path, cacheMaxAge);
-    this._stripFromUri = stripFromUri;
   }
 
   private static File getIndexFile(String rootPath)
