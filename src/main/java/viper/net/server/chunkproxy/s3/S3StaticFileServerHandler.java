@@ -122,7 +122,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
               }
               else
               {
-                sendError(ctx, INTERNAL_SERVER_ERROR);
+                sendError(ctx.getChannel(), INTERNAL_SERVER_ERROR);
                 closeS3Channel();
               }
             }
@@ -153,13 +153,13 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     final String path = Util.sanitizeUri(uri);
     if (path == null)
     {
-      sendError(ctx, FORBIDDEN);
+      sendError(ctx.getChannel(), FORBIDDEN);
       return;
     }
 
     if (_request.getMethod() != GET)
     {
-      sendError(ctx, METHOD_NOT_ALLOWED);
+      sendError(ctx.getChannel(), METHOD_NOT_ALLOWED);
       return;
     }
 
@@ -179,14 +179,14 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     Throwable cause = e.getCause();
     if (cause instanceof TooLongFrameException)
     {
-      sendError(ctx, BAD_REQUEST);
+      sendError(ctx.getChannel(), BAD_REQUEST);
       return;
     }
 
     cause.printStackTrace();
     if (ch.isConnected())
     {
-      sendError(ctx, INTERNAL_SERVER_ERROR);
+      sendError(ctx.getChannel(), INTERNAL_SERVER_ERROR);
     }
 
     if (_s3Channel != null)
@@ -196,16 +196,16 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
   }
 
-  private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
+  private static void sendError(Channel channel, HttpResponseStatus status)
   {
     HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
     response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
     response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
 
     // Close the connection as soon as the error message is sent.
-    if (ctx.getChannel().isWritable())
+    if (channel.isWritable())
     {
-      ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+      channel.write(response).addListener(ChannelFutureListener.CLOSE);
     }
   }
 
@@ -264,7 +264,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
         }
         else
         {
-          sendError(ctx, INTERNAL_SERVER_ERROR);
+          sendError(_destChannel, INTERNAL_SERVER_ERROR);
           closeS3Channel();
         }
       }

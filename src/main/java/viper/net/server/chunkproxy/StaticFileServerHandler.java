@@ -24,12 +24,12 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 import viper.net.server.CachableHttpResponse;
 import viper.net.server.Util;
 
@@ -47,7 +47,9 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private int _cacheMaxAge = -1;
   private boolean _fromClasspath = false;
 
-  private final File _indexFile;
+  static ConcurrentHashMap<String, FileContentInfo> _fileCache = new ConcurrentHashMap<String, FileContentInfo>();
+
+  static File _indexFile = null;
 
   // TODO: add support for index.htm
 
@@ -68,7 +70,10 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
     _rootPath = _rootPath.replace(File.separatorChar, '/');
 
-    _indexFile = getIndexFile(_rootPath);
+    if (_indexFile == null)
+    {
+      _indexFile = getIndexFile(_rootPath);
+    }
   }
 
   public StaticFileServerHandler(String path, String stripFromUri)
@@ -132,21 +137,37 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       return;
     }
 
-    FileContentInfo contentInfo = getFileContent(path);
-    if (contentInfo == null)
+    FileContentInfo contentInfo;
+
+    if (_fileCache.containsKey(path))
     {
-      sendError(ctx, NOT_FOUND);
-      return;
+      contentInfo = _fileCache.get(path);
+    }
+    else
+    {
+      synchronized (_fileCache)
+      {
+        if (!_fileCache.containsKey(path))
+        {
+          contentInfo = getFileContent(path);
+          if (contentInfo == null)
+          {
+            sendError(ctx, NOT_FOUND);
+            return;
+          }
+
+          _fileCache.put(path, contentInfo);
+        }
+        else
+        {
+          contentInfo = _fileCache.get(path);
+        }
+      }
     }
 
-    CachableHttpResponse response = new CachableHttpResponse(HTTP_1_1, OK);
-    response.setHost(request.getHeader(HttpHeaders.Names.HOST));
-    response.setRequestUri(request.getUri());
-    response.setCacheMaxAge(_cacheMaxAge);
+    DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
     response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.contentType);
     setContentLength(response, contentInfo.content.readableBytes());
-
-    response.setBackingFileChannel(contentInfo.fileChannel);
     response.setContent(contentInfo.content);
     ChannelFuture writeFuture = e.getChannel().write(response);
 

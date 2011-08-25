@@ -3,19 +3,30 @@ package viper.app.photo;
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.omg.CosNaming.NamingContextExtPackage.StringNameHelper;
+import viper.net.server.chunkproxy.HttpChunkProxyHandler;
+import viper.net.server.chunkproxy.HttpChunkRelayProxy;
+import viper.net.server.chunkproxy.StaticFileServerHandler;
+import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
+import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
+import viper.net.server.router.HostRouterHandler;
+import viper.net.server.router.RouteMatcher;
+import viper.net.server.router.RouterHandler;
+import viper.net.server.router.UriStartsWithRouteMatcher;
 
 
 public class PhotoServer
@@ -49,26 +60,108 @@ public class PhotoServer
 
     new File(staticFileRoot).mkdir();
 
-    ServerPipelineFactory factory =
-      new ServerPipelineFactory(
-        URI.create(String.format("http://localhost:%s", port)),
+    PhotoServerChannelPipelineFactory photoServerChannelPipelineFactory =
+      new PhotoServerChannelPipelineFactory(
         authGenerator,
         bucketName,
         cf,
         URI.create(String.format("http://%s:%s", remoteHost, 80)),
         (1024*1024)*1024,
-        listeners,
         staticFileRoot);
 
-    // Set up the event pipeline factory.
-    photoServer._bootstrap.setPipelineFactory(factory);
+    HostRouterHandler hostRouterHandler =
+      createHostRouterHandler(
+        URI.create(String.format("http://localhost:%s", port)),
+        photoServerChannelPipelineFactory);
 
-    // Bind and start to accept incoming connections.
+    ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
+
+    photoServer._bootstrap.setPipelineFactory(factory);
     photoServer._bootstrap.bind(new InetSocketAddress(port));
 
-//    new Thread(new CounterRunnable(listeners)).start();
-
     return photoServer;
+  }
+
+  static HostRouterHandler createHostRouterHandler(URI localHost, ChannelPipelineFactory lhPipelineFactory)
+  {
+    ConcurrentHashMap<String, ChannelPipelineFactory> routes = new ConcurrentHashMap<String, ChannelPipelineFactory>();
+
+    List<String> localhostNames = new ArrayList<String>();
+    localhostNames.add(localHost.getHost());
+
+    try {
+      String osHostName = InetAddress.getLocalHost().getHostName();
+      localhostNames.add(osHostName);
+      localhostNames.add(InetAddress.getLocalHost().getCanonicalHostName());
+
+      if (osHostName.contains("."))
+      {
+        localhostNames.add(osHostName.substring(0, osHostName.indexOf(".")));
+      }
+    } catch (UnknownHostException e) {
+      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+    }
+
+    for (String hostname : localhostNames)
+    {
+      if (localHost.getPort() == 80)
+      {
+        routes.put(hostname, lhPipelineFactory);
+      }
+      routes.put(String.format("%s:%s", hostname, localHost.getPort()), lhPipelineFactory);
+    }
+
+    return new HostRouterHandler(routes);
+  }
+
+  private static class PhotoServerChannelPipelineFactory implements ChannelPipelineFactory
+  {
+    private final QueryStringAuthGenerator _authGenerator;
+    private final ClientSocketChannelFactory _cf;
+    private final URI _amazonHost;
+    private final int _maxContentLength;
+    private final String _bucketName;
+    private final String _staticFileRoot;
+
+    public PhotoServerChannelPipelineFactory(
+      QueryStringAuthGenerator s3AuthGenerator,
+      String s3BucketName,
+      ClientSocketChannelFactory cf,
+      URI amazonHost,
+      int maxContentLength,
+      String staticFileRoot)
+    {
+      _authGenerator = s3AuthGenerator;
+      _bucketName = s3BucketName;
+      _cf = cf;
+      _amazonHost = amazonHost;
+      _maxContentLength = maxContentLength;
+      _staticFileRoot = staticFileRoot;
+    }
+
+    @Override
+    public ChannelPipeline getPipeline() throws Exception
+    {
+      HttpChunkRelayProxy proxy =
+        new S3StandardChunkProxy(
+          _authGenerator,
+          _bucketName,
+          _cf,
+          _amazonHost);
+
+      FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
+
+      LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
+      localhostRoutes.put(new UriStartsWithRouteMatcher("/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+      localhostRoutes.put(new UriStartsWithRouteMatcher("/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
+      localhostRoutes.put(new UriStartsWithRouteMatcher("/"), new StaticFileServerHandler(_staticFileRoot, 60*60));
+//    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
+
+      ChannelPipeline lhPipeline = new DefaultChannelPipeline();
+      lhPipeline.addLast("router", new RouterHandler("uri-handlers", localhostRoutes));
+
+      return lhPipeline;
+    }
   }
 
 /*

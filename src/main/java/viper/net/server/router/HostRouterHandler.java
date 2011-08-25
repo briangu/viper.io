@@ -4,12 +4,8 @@ package viper.net.server.router;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.jboss.netty.channel.ChannelEvent;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import viper.net.server.StatusResponseHandler;
@@ -19,11 +15,11 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler
 {
   private static final ChannelHandler HANDLER_404 = new StatusResponseHandler("Not found", 404);
 
-  ConcurrentHashMap<String, ChannelPipeline> _routes = new ConcurrentHashMap<String, ChannelPipeline>();
+  ConcurrentHashMap<String, ChannelPipelineFactory> _routes = new ConcurrentHashMap<String, ChannelPipelineFactory>();
 
   private volatile ChannelPipeline _lastPipeline = null;
 
-  public HostRouterHandler(ConcurrentHashMap<String, ChannelPipeline> routes)
+  public HostRouterHandler(ConcurrentHashMap<String, ChannelPipelineFactory> routes)
   {
     _routes = routes;
   }
@@ -53,7 +49,7 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler
 
     if (_routes.containsKey(host))
     {
-      hostPipeline = _routes.get(host);
+      hostPipeline = _routes.get(host).getPipeline();
     }
     else
     {

@@ -20,7 +20,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class CacheHandler extends SimpleChannelHandler
 {
-  ConcurrentHashMap<String, CacheEntry> _cache = new ConcurrentHashMap<String, CacheEntry>();
+  static ConcurrentHashMap<String, ConcurrentHashMap<String, CacheEntry>> _cache = new ConcurrentHashMap<String, ConcurrentHashMap<String, CacheEntry>>();
 
   @Override
   public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e)
@@ -30,28 +30,35 @@ public class CacheHandler extends SimpleChannelHandler
     {
       HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
 
-      if (_cache.containsKey(request.getUri()))
+      if (request.containsHeader(HttpHeaders.Names.HOST))
       {
-        CacheEntry ce = _cache.get(request.getUri());
+        String host = request.getHeader(HttpHeaders.Names.HOST);
 
-        if (ce.expires > System.currentTimeMillis())
+        if (_cache.contains(host))
         {
-          ChannelFuture f = e.getChannel().write(ce.content);
-          if (!HttpHeaders.isKeepAlive(request))
+          CacheEntry ce = _cache.get(host).get(request.getUri());
+          if (ce != null)
           {
-            f.addListener(ChannelFutureListener.CLOSE);
+            if (ce.expires > System.currentTimeMillis())
+            {
+              ChannelFuture f = e.getChannel().write(ce.content);
+              if (!HttpHeaders.isKeepAlive(request))
+              {
+                f.addListener(ChannelFutureListener.CLOSE);
+              }
+              return;
+            }
+            else
+            {
+              if (ce.content instanceof CachableHttpResponse)
+              {
+                CachableHttpResponse r = (CachableHttpResponse) ce.content;
+                r.dispose();
+              }
+              _cache.get(host).remove(ce);
+            }
           }
-          return;
-        }
-        else
-        {
-          if (ce.content instanceof CachableHttpResponse)
-          {
-            CachableHttpResponse r = (CachableHttpResponse) ce.content;
-            r.dispose();
-          }
-          _cache.remove(ce);
-        }
+         }
       }
     }
 
@@ -68,9 +75,30 @@ public class CacheHandler extends SimpleChannelHandler
 
       if (r.getCacheMaxAge() > 0)
       {
-        _cache.putIfAbsent(
-          r.getRequestUri(),
-          new CacheEntry(r, System.currentTimeMillis() + r.getCacheMaxAge() * 1000));
+        String host = r.getHost();
+
+        if (!_cache.contains(host))
+        {
+          _cache.put(host, new ConcurrentHashMap<String, CacheEntry>());
+        }
+
+        synchronized (_cache.get(host))
+        {
+          if (_cache.get(host).containsKey(r.getRequestUri()))
+          {
+            r.dispose();
+          }
+          else
+          {
+            _cache.get(host).put(
+              r.getRequestUri(),
+              new CacheEntry(r, System.currentTimeMillis() + r.getCacheMaxAge() * 1000));
+          }
+        }
+      }
+      else
+      {
+        r.dispose();
       }
     }
 
