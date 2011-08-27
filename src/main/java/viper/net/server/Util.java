@@ -4,11 +4,14 @@ package viper.net.server;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.UUID;
 import javax.activation.MimetypesFileTypeMap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -17,15 +20,38 @@ import org.jboss.netty.handler.codec.base64.Base64;
 import org.jboss.netty.handler.codec.base64.Base64Dialect;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
+import viper.net.server.chunkproxy.FileContentInfo;
 
 
-/**
- * Created by IntelliJ IDEA. User: bguarrac Date: 8/18/11 Time: 5:29 PM To change this template use File | Settings |
- * File Templates.
- */
 public class Util
 {
   static private MimetypesFileTypeMap _fileTypeMap = new MimetypesFileTypeMap();
+
+  public static FileContentInfo getDefaultFile(String rootPath)
+      throws IOException
+  {
+    File foundIndex = null;
+
+     final String[] defaultFiles = new String[] { "index.html", "index.htm" };
+
+     for (String defaultFile : defaultFiles)
+     {
+       File file = new File(rootPath + File.separatorChar + defaultFile);
+       if (file.exists())
+       {
+         foundIndex = file;
+         break;
+       }
+     }
+
+    String contentType = "text/html";
+
+    FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
+    ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
+    FileContentInfo result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+
+    return result;
+  }
 
   public static String getContentType(String filename)
   {

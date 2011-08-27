@@ -51,6 +51,7 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
       if (!m.getKey().match(request)) continue;
       setHandler(ctx.getPipeline(), m.getValue());
       matchFound = true;
+      // TODO: remove route prefix
       break;
     }
 

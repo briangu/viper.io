@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 import org.jboss.netty.handler.codec.http.HttpChunk;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 
 
 public class FileChunkProxy implements HttpChunkRelayProxy
@@ -14,8 +15,11 @@ public class FileChunkProxy implements HttpChunkRelayProxy
   private final String _rootDir;
 
   String _filePath;
+  String _metaFilePath;
   RandomAccessFile _raf;
   FileChannel _fileChannel;
+  Map<String, String> _objectMeta;
+  String _objectName;
 
   HttpChunkProxyEventListener _listener;
 
@@ -30,6 +34,8 @@ public class FileChunkProxy implements HttpChunkRelayProxy
   public FileChunkProxy(String rootDir)
   {
     _rootDir = rootDir;
+    _metaFilePath = _rootDir + File.separatorChar + ".meta" + File.separatorChar;
+    new File(_metaFilePath).mkdir();
   }
 
   @Override
@@ -62,6 +68,8 @@ public class FileChunkProxy implements HttpChunkRelayProxy
     _raf = new RandomAccessFile(_filePath, "rw");
     _raf.setLength(objectSize);
     _fileChannel = _raf.getChannel();
+    _objectMeta = objectMeta;
+    _objectName = objectName;
 
     _state = State.relay;
 
@@ -83,6 +91,15 @@ public class FileChunkProxy implements HttpChunkRelayProxy
       {
         _fileChannel.write(chunk.getContent().toByteBuffer());
         _fileChannel.close();
+
+        if (_objectMeta.containsKey(HttpHeaders.Names.CONTENT_TYPE))
+        {
+          File meta = new File(_metaFilePath + _objectName);
+          RandomAccessFile metaRaf = new RandomAccessFile(meta, "rw");
+          metaRaf.writeUTF(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE));
+          metaRaf.close();
+        }
+
         _state = State.closed;
         _listener.onProxyCompleted();
         reset();

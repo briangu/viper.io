@@ -9,8 +9,8 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.*;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import javax.ws.rs.Path;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -42,20 +42,23 @@ import viper.net.server.Util;
 public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
   private String _rootPath;
-  private String _stripFromUri;
-  private boolean _fromClasspath = false;
+  private final boolean _fromClasspath;
+  private final ConcurrentHashMap<String, FileContentInfo> _fileCache;
+  private final FileContentInfo _defaultFile;
+  String _metaFilePath;
 
-  static ConcurrentHashMap<String, FileContentInfo> _fileCache = new ConcurrentHashMap<String, FileContentInfo>();
-  static ConcurrentHashMap<String, File> _indexCache = new ConcurrentHashMap<String, File>();
-
-  // TODO: add support for index.htm
-
-  public StaticFileServerHandler(String path)
+  public StaticFileServerHandler(
+      String rootPath,
+      ConcurrentHashMap<String, FileContentInfo> fileCache,
+      FileContentInfo defaultFile)
   {
-    if (path.startsWith("classpath://"))
+    _fileCache = fileCache;
+    _fromClasspath = rootPath.startsWith("classpath://");
+    _defaultFile = defaultFile;
+
+    if (_fromClasspath)
     {
-      _fromClasspath = true;
-      _rootPath = path.replace("classpath://", "");
+      _rootPath = rootPath.replace("classpath://", "");
       if (_rootPath.lastIndexOf("/") == _rootPath.length() - 1)
       {
         _rootPath = _rootPath.substring(0, _rootPath.length() - 1);
@@ -63,28 +66,11 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
     else
     {
-      _rootPath = path;
+      _rootPath = rootPath;
     }
+
     _rootPath = _rootPath.replace(File.separatorChar, '/');
-  }
-
-  private static File getIndexFile(String rootPath)
-  {
-    File foundIndex = null;
-
-    final String[] defaultFiles = new String[] { "index.html", "index.htm" };
-
-    for (String defaultFile : defaultFiles)
-    {
-      File tmpFile = new File(rootPath + "/" + defaultFile);
-      if (tmpFile.exists())
-      {
-        foundIndex = tmpFile;
-        break;
-      }
-    }
-
-    return foundIndex;
+    _metaFilePath = _rootPath + File.separatorChar + ".meta" + File.separatorChar;
   }
 
   @Override
@@ -99,10 +85,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
 
     String uri = request.getUri();
-    if (_stripFromUri != null)
-    {
-      uri = uri.replaceFirst(_stripFromUri, "");
-    }
 
     final String path = Util.sanitizeUri(uri);
     if (path == null)
@@ -112,32 +94,29 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
 
     FileContentInfo contentInfo;
-    String host = request.getHeader(HttpHeaders.Names.HOST);
 
-    final String fileKey = String.format("%s_%s", host, path);
-
-    if (_fileCache.containsKey(fileKey))
+    if (_fileCache.containsKey(path))
     {
-      contentInfo = _fileCache.get(fileKey);
+      contentInfo = _fileCache.get(path);
     }
     else
     {
       synchronized (_fileCache)
       {
-        if (!_fileCache.containsKey(fileKey))
+        if (!_fileCache.containsKey(path))
         {
-          contentInfo = getFileContent(host, path);
+          contentInfo = getFileContent(path);
           if (contentInfo == null)
           {
             sendError(ctx, NOT_FOUND);
             return;
           }
 
-          _fileCache.put(fileKey, contentInfo);
+          _fileCache.put(_rootPath + File.separatorChar + path, contentInfo);
         }
         else
         {
-          contentInfo = _fileCache.get(fileKey);
+          contentInfo = _fileCache.get(_rootPath + File.separatorChar + path);
         }
       }
     }
@@ -154,22 +133,13 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
   }
 
-  private class FileContentInfo
+  private FileContentInfo getFileContent(String path)
   {
-    public ChannelBuffer content;
-    public FileChannel fileChannel;
-    public String contentType;
-
-    public FileContentInfo(FileChannel fileChannel, ChannelBuffer content, String contentType)
+    if (path.equals("/"))
     {
-      this.fileChannel = fileChannel;
-      this.content = content;
-      this.contentType = contentType;
+      return _defaultFile;
     }
-  }
 
-  private FileContentInfo getFileContent(String host, String path)
-  {
     FileChannel fc = null;
     FileContentInfo result = null;
 
@@ -188,38 +158,31 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       }
       else
       {
+        // TODO: make a touch more secure - chroot to the rescue!
+        path = path.substring(path.lastIndexOf("/"));
         file = new File(_rootPath + path);
       }
 
-      String contentType;
-
-      if (!file.exists() || path.equals("/"))
+      if (file.exists())
       {
-        if (!_indexCache.containsKey(host))
-        {
-          synchronized (_indexCache)
-          {
-            if (!_indexCache.containsKey(host))
-            {
-              _indexCache.put(host, getIndexFile(_rootPath));
-            }
-          }
-        }
-        file = path.equals("/") ? _indexCache.get(host) : null;
-        if (file == null)
-        {
-          return null;
-        }
-        contentType = "text/html";
-      }
-      else
-      {
-        contentType = Util.getContentType(path);
-      }
+        String contentType;
 
-      fc = new RandomAccessFile(file, "r").getChannel();
-      ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+        File meta = new File(_metaFilePath + path);
+        if (meta.exists())
+        {
+          RandomAccessFile metaRaf = new RandomAccessFile(meta, "r");
+          contentType = metaRaf.readUTF();
+          metaRaf.close();
+        }
+        else
+        {
+          contentType = Util.getContentType(path);
+        }
+
+        fc = new RandomAccessFile(file, "r").getChannel();
+        ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
+        result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+      }
     }
     catch (IOException e)
     {
