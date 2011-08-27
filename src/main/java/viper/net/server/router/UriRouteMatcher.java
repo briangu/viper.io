@@ -18,6 +18,11 @@ public class UriRouteMatcher implements RouteMatcher
 //    regex
   }
 
+  public String getRoute()
+  {
+    return _route;
+  }
+
   public UriRouteMatcher(MatchMode mode, String route)
   {
     _mode = mode;

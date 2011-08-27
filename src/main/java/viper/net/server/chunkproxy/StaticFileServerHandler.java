@@ -36,8 +36,8 @@ import viper.net.server.Util;
 /**
  * A file server that can serve files from file system and class path.
  * <p/>
- * If you wish to customize the error message, please sub-class and override sendError(). Based on Trustin Lee's
- * original file serving example
+ * If you wish to customize the error message, please sub-class and override sendError().
+ * Based on Trustin Lee's original file serving example
  */
 public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
@@ -112,11 +112,11 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
             return;
           }
 
-          _fileCache.put(_rootPath + File.separatorChar + path, contentInfo);
+          _fileCache.put(path, contentInfo);
         }
         else
         {
-          contentInfo = _fileCache.get(_rootPath + File.separatorChar + path);
+          contentInfo = _fileCache.get(path);
         }
       }
     }
@@ -159,7 +159,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       else
       {
         // TODO: make a touch more secure - chroot to the rescue!
-        path = path.substring(path.lastIndexOf("/"));
         file = new File(_rootPath + path);
       }
 

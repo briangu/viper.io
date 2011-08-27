@@ -6,5 +6,7 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 
 public interface RouteMatcher
 {
-    public boolean match(HttpRequest request);
+  public String getRoute();
+
+  public boolean match(HttpRequest request);
 }
