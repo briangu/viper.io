@@ -41,36 +41,11 @@ import viper.net.server.Util;
  */
 public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
 {
-  private String _rootPath;
-  private final boolean _fromClasspath;
-  private final ConcurrentHashMap<String, FileContentInfo> _fileCache;
-  private final FileContentInfo _defaultFile;
-  String _metaFilePath;
+  private final FileContentInfoProvider _fileCache;
 
-  public StaticFileServerHandler(
-      String rootPath,
-      ConcurrentHashMap<String, FileContentInfo> fileCache,
-      FileContentInfo defaultFile)
+  public StaticFileServerHandler(FileContentInfoProvider fileCache)
   {
     _fileCache = fileCache;
-    _fromClasspath = rootPath.startsWith("classpath://");
-    _defaultFile = defaultFile;
-
-    if (_fromClasspath)
-    {
-      _rootPath = rootPath.replace("classpath://", "");
-      if (_rootPath.lastIndexOf("/") == _rootPath.length() - 1)
-      {
-        _rootPath = _rootPath.substring(0, _rootPath.length() - 1);
-      }
-    }
-    else
-    {
-      _rootPath = rootPath;
-    }
-
-    _rootPath = _rootPath.replace(File.separatorChar, '/');
-    _metaFilePath = _rootPath + File.separatorChar + ".meta" + File.separatorChar;
   }
 
   @Override
@@ -93,33 +68,7 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
       return;
     }
 
-    FileContentInfo contentInfo;
-
-    if (_fileCache.containsKey(path))
-    {
-      contentInfo = _fileCache.get(path);
-    }
-    else
-    {
-      synchronized (_fileCache)
-      {
-        if (!_fileCache.containsKey(path))
-        {
-          contentInfo = getFileContent(path);
-          if (contentInfo == null)
-          {
-            sendError(ctx, NOT_FOUND);
-            return;
-          }
-
-          _fileCache.put(path, contentInfo);
-        }
-        else
-        {
-          contentInfo = _fileCache.get(path);
-        }
-      }
-    }
+    FileContentInfo contentInfo = _fileCache.getFileContent(path);
 
     DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
     response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.contentType);
@@ -131,81 +80,6 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     {
       writeFuture.addListener(ChannelFutureListener.CLOSE);
     }
-  }
-
-  private FileContentInfo getFileContent(String path)
-  {
-    if (path.equals("/"))
-    {
-      return _defaultFile;
-    }
-
-    FileChannel fc = null;
-    FileContentInfo result = null;
-
-    try
-    {
-      File file;
-
-      if (_fromClasspath)
-      {
-        URL url = this.getClass().getResource(_rootPath + path);
-        if (url == null)
-        {
-          return null;
-        }
-        file = new File(url.getFile());
-      }
-      else
-      {
-        // TODO: make a touch more secure - chroot to the rescue!
-        file = new File(_rootPath + path);
-      }
-
-      if (file.exists())
-      {
-        String contentType;
-
-        File meta = new File(_metaFilePath + path);
-        if (meta.exists())
-        {
-          RandomAccessFile metaRaf = new RandomAccessFile(meta, "r");
-          contentType = metaRaf.readUTF();
-          metaRaf.close();
-        }
-        else
-        {
-          contentType = Util.getContentType(path);
-        }
-
-        fc = new RandomAccessFile(file, "r").getChannel();
-        ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-        result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
-      }
-    }
-    catch (IOException e)
-    {
-      e.printStackTrace();
-    }
-    finally
-    {
-      if (result == null)
-      {
-        if (fc != null)
-        {
-          try
-          {
-            fc.close();
-          }
-          catch (IOException e)
-          {
-            e.printStackTrace();
-          }
-        }
-      }
-    }
-
-    return result;
   }
 
   @Override

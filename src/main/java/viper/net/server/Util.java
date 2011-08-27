@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -27,28 +28,69 @@ public class Util
 {
   static private MimetypesFileTypeMap _fileTypeMap = new MimetypesFileTypeMap();
 
+  public static FileContentInfo getDefaultFileFromResources(java.lang.Class<?> clazz, String rootPath)
+      throws IOException
+  {
+    File foundIndex = null;
+
+    final String[] defaultFiles = new String[]{"index.html", "index.htm"};
+
+    for (String defaultFile : defaultFiles)
+    {
+      URL url = clazz.getResource(rootPath + File.separatorChar + defaultFile);
+      if (url == null)
+      {
+        continue;
+      }
+      File file = new File(url.getFile());
+      if (file.exists())
+      {
+        foundIndex = file;
+        break;
+      }
+    }
+
+    FileContentInfo result = null;
+
+    if (foundIndex != null)
+    {
+      String contentType = "text/html";
+
+      FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
+      ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
+      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+    }
+
+    return result;
+  }
+
   public static FileContentInfo getDefaultFile(String rootPath)
       throws IOException
   {
     File foundIndex = null;
 
-     final String[] defaultFiles = new String[] { "index.html", "index.htm" };
+    final String[] defaultFiles = new String[]{"index.html", "index.htm"};
 
-     for (String defaultFile : defaultFiles)
-     {
-       File file = new File(rootPath + File.separatorChar + defaultFile);
-       if (file.exists())
-       {
-         foundIndex = file;
-         break;
-       }
-     }
+    for (String defaultFile : defaultFiles)
+    {
+      File file = new File(rootPath + File.separatorChar + defaultFile);
+      if (file.exists())
+      {
+        foundIndex = file;
+        break;
+      }
+    }
 
-    String contentType = "text/html";
+    FileContentInfo result = null;
 
-    FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
-    ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-    FileContentInfo result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+    if (foundIndex != null)
+    {
+      String contentType = "text/html";
+
+      FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
+      ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
+      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+    }
 
     return result;
   }
@@ -121,7 +163,7 @@ public class Util
   }
 
   public static String sanitizeUri(String uri)
-    throws URISyntaxException
+      throws URISyntaxException
   {
     // Decode the path.
     try
@@ -145,10 +187,8 @@ public class Util
 
     // Simplistic dumb security check.
     // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + ".")
-        || uri.contains("." + File.separator)
-        || uri.startsWith(".")
-        || uri.endsWith("."))
+    if (uri.contains(File.separator + ".") || uri.contains("." + File.separator) || uri.startsWith(".") || uri.endsWith(
+        "."))
     {
       return null;
     }

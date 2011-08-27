@@ -1,9 +1,9 @@
 
-remove prefix from handlers' uri
+#remove prefix from handlers' uri
 generalize static file cache to support:
   no caching
-  general path caching
-  generlize index.html searching
+  #general path caching algorithm
+  #generlize index.html searching
   enable/disable .meta lookup
 attribution
 

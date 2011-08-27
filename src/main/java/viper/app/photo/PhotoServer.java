@@ -4,26 +4,32 @@ package viper.app.photo;
 import com.amazon.s3.QueryStringAuthGenerator;
 import java.io.File;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import javax.imageio.stream.FileCacheImageInputStream;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.ChannelHandler;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.DefaultChannelPipeline;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import viper.net.server.Util;
 import viper.net.server.chunkproxy.FileChunkProxy;
 import viper.net.server.chunkproxy.FileContentInfo;
+import viper.net.server.chunkproxy.FileContentInfoProvider;
 import viper.net.server.chunkproxy.HttpChunkProxyHandler;
 import viper.net.server.chunkproxy.HttpChunkRelayProxy;
+import viper.net.server.chunkproxy.InsertOnlyFileContentInfoCache;
+import viper.net.server.chunkproxy.StaticFileContentInfoProvider;
 import viper.net.server.chunkproxy.StaticFileServerHandler;
 import viper.net.server.chunkproxy.s3.S3StandardChunkProxy;
 import viper.net.server.chunkproxy.s3.S3StaticFileServerHandler;
@@ -42,22 +48,16 @@ public class PhotoServer
   {
     PhotoServer photoServer = new PhotoServer();
 
-    photoServer._bootstrap =
-      new ServerBootstrap(
-        new NioServerSocketChannelFactory(
-          Executors.newCachedThreadPool(),
-          Executors.newCachedThreadPool()));
+    photoServer._bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+                                                                                   Executors.newCachedThreadPool()));
 
-    ChannelPipelineFactory photoServerChannelPipelineFactory =
-      LocalPhotoServerChannelPipelineFactory.create(
-        (1024*1024)*1024,
-        staticFileRoot + "/uploads",
-        staticFileRoot);
+    ChannelPipelineFactory photoServerChannelPipelineFactory = new LocalPhotoServerChannelPipelineFactory((1024 * 1024) * 1024,
+                                                                                                          staticFileRoot + "/uploads",
+                                                                                                          staticFileRoot);
 
-    HostRouterHandler hostRouterHandler =
-      createHostRouterHandler(
-        URI.create(String.format("http://localhost:%s", port)),
-        photoServerChannelPipelineFactory);
+    HostRouterHandler hostRouterHandler = createHostRouterHandler(URI.create(String.format("http://localhost:%s",
+                                                                                           port)),
+                                                                  photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
@@ -67,20 +67,13 @@ public class PhotoServer
     return photoServer;
   }
 
-  public static PhotoServer createWithS3(
-      int port,
-      String awsId,
-      String awsSecret,
-      String bucketName)
+  public static PhotoServer createWithS3(int port, String awsId, String awsSecret, String bucketName)
       throws URISyntaxException, IOException
   {
     PhotoServer photoServer = new PhotoServer();
 
-    photoServer._bootstrap =
-      new ServerBootstrap(
-        new NioServerSocketChannelFactory(
-          Executors.newCachedThreadPool(),
-          Executors.newCachedThreadPool()));
+    photoServer._bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+                                                                                   Executors.newCachedThreadPool()));
 
     Executor executor = Executors.newCachedThreadPool();
     ClientSocketChannelFactory cf = new NioClientSocketChannelFactory(executor, executor);
@@ -93,19 +86,20 @@ public class PhotoServer
 
     new File(staticFileRoot).mkdir();
 
-    ChannelPipelineFactory photoServerChannelPipelineFactory =
-      AmazonPhotoServerChannelPipelineFactory.create(
-        authGenerator,
-        bucketName,
-        cf,
-        URI.create(String.format("http://%s:%s", remoteHost, 80)),
-        (1024*1024)*1024,
-        staticFileRoot);
+    ChannelPipelineFactory photoServerChannelPipelineFactory = new AmazonPhotoServerChannelPipelineFactory(authGenerator,
+                                                                                                           bucketName,
+                                                                                                           cf,
+                                                                                                           URI.create(
+                                                                                                               String.format(
+                                                                                                                   "http://%s:%s",
+                                                                                                                   remoteHost,
+                                                                                                                   80)),
+                                                                                                           (1024 * 1024) * 1024,
+                                                                                                           staticFileRoot);
 
-    HostRouterHandler hostRouterHandler =
-      createHostRouterHandler(
-        URI.create(String.format("http://localhost:%s", port)),
-        photoServerChannelPipelineFactory);
+    HostRouterHandler hostRouterHandler = createHostRouterHandler(URI.create(String.format("http://localhost:%s",
+                                                                                           port)),
+                                                                  photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
@@ -115,9 +109,7 @@ public class PhotoServer
     return photoServer;
   }
 
-  static HostRouterHandler createHostRouterHandler(
-    URI localHost,
-    ChannelPipelineFactory lhPipelineFactory)
+  static HostRouterHandler createHostRouterHandler(URI localHost, ChannelPipelineFactory lhPipelineFactory)
       throws IOException
   {
     ConcurrentHashMap<String, ChannelPipelineFactory> routes = new ConcurrentHashMap<String, ChannelPipelineFactory>();
@@ -125,7 +117,8 @@ public class PhotoServer
     List<String> localhostNames = new ArrayList<String>();
     localhostNames.add(localHost.getHost());
 
-    try {
+    try
+    {
       String osHostName = InetAddress.getLocalHost().getHostName();
       localhostNames.add(osHostName);
       localhostNames.add(InetAddress.getLocalHost().getCanonicalHostName());
@@ -134,7 +127,9 @@ public class PhotoServer
       {
         localhostNames.add(osHostName.substring(0, osHostName.indexOf(".")));
       }
-    } catch (UnknownHostException e) {
+    }
+    catch (UnknownHostException e)
+    {
       e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
     }
 
@@ -150,36 +145,34 @@ public class PhotoServer
     routes.put(String.format("%s:%s", "nebulous", localHost.getPort()), new ChannelPipelineFactory()
     {
       String _rootPath = "src/main/resources/public2";
-      FileContentInfo _defaultFile = Util.getDefaultFile(_rootPath);
+      FileContentInfoProvider _staticFileProvider = new StaticFileContentInfoProvider(_rootPath);
+      FileContentInfoProvider _fileCache = new InsertOnlyFileContentInfoCache(_staticFileProvider);
 
       @Override
-      public ChannelPipeline getPipeline() throws Exception
+      public ChannelPipeline getPipeline()
+          throws Exception
       {
-        return new DefaultChannelPipeline() {{
-          addLast("static",
-                  new StaticFileServerHandler(
-                      _rootPath,
-                      new ConcurrentHashMap<String, FileContentInfo>(),
-                      _defaultFile));
-        }};
+        return new DefaultChannelPipeline()
+        {{
+            addLast("static", new StaticFileServerHandler(_fileCache));
+          }};
       }
     });
 
     routes.put(String.format("%s:%s", "amor", localHost.getPort()), new ChannelPipelineFactory()
     {
       String _rootPath = "src/main/resources/public3";
-      FileContentInfo _defaultFile = Util.getDefaultFile(_rootPath);
+      FileContentInfoProvider _staticFileProvider = new StaticFileContentInfoProvider(_rootPath);
+      FileContentInfoProvider _fileCache = new InsertOnlyFileContentInfoCache(_staticFileProvider);
 
       @Override
-      public ChannelPipeline getPipeline() throws Exception
+      public ChannelPipeline getPipeline()
+          throws Exception
       {
-        return new DefaultChannelPipeline() {{
-          addLast("static",
-                  new StaticFileServerHandler(
-                      _rootPath,
-                      new ConcurrentHashMap<String, FileContentInfo>(),
-                      _defaultFile));
-        }};
+        return new DefaultChannelPipeline()
+        {{
+            addLast("static", new StaticFileServerHandler(_fileCache));
+          }};
       }
     });
 
@@ -191,47 +184,40 @@ public class PhotoServer
     private final int _maxContentLength;
     private final String _uploadFileRoot;
     private final String _staticFileRoot;
-    private final FileContentInfo _defaultFile;
+    private final FileContentInfoProvider _staticFileProvider;
+    private final FileContentInfoProvider _staticFileCache;
+    private final FileContentInfoProvider _uploadFileProvider;
+    private final FileContentInfoProvider _uploadFileCache;
 
     static ConcurrentHashMap<String, FileContentInfo> fileCache = new ConcurrentHashMap<String, FileContentInfo>();
 
-    public static LocalPhotoServerChannelPipelineFactory create(int maxContentLength,
-                                                                String uploadFileRoot,
-                                                                String staticFileRoot)
-        throws IOException
-    {
-      FileContentInfo defaultFile = Util.getDefaultFile(staticFileRoot);
-
-      return new LocalPhotoServerChannelPipelineFactory(
-        maxContentLength,
-        uploadFileRoot,
-        staticFileRoot,
-        defaultFile);
-    }
-
-    public LocalPhotoServerChannelPipelineFactory(
-      int maxContentLength,
-      String uploadFileRoot,
-      String staticFileRoot,
-      FileContentInfo defaultFile)
+    public LocalPhotoServerChannelPipelineFactory(int maxContentLength, String uploadFileRoot, String staticFileRoot)
     {
       _maxContentLength = maxContentLength;
       _uploadFileRoot = uploadFileRoot;
       _staticFileRoot = staticFileRoot;
-      _defaultFile = defaultFile;
+
+      _staticFileProvider = new StaticFileContentInfoProvider(_staticFileRoot);
+      _staticFileCache = new InsertOnlyFileContentInfoCache(_staticFileProvider);
+      _uploadFileProvider = new StaticFileContentInfoProvider(_uploadFileRoot);
+      _uploadFileCache = new InsertOnlyFileContentInfoCache(_uploadFileProvider);
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
+        throws Exception
     {
       HttpChunkRelayProxy proxy = new FileChunkProxy(_uploadFileRoot);
 
       FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
       LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/d/"), new StaticFileServerHandler(_uploadFileRoot, fileCache, _defaultFile));
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/"), new StaticFileServerHandler(_staticFileRoot, fileCache, _defaultFile));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"),
+                          new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/d/"),
+                          new StaticFileServerHandler(_uploadFileCache));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/"),
+                          new StaticFileServerHandler(_staticFileCache));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
 
       ChannelPipeline lhPipeline = new DefaultChannelPipeline();
@@ -249,38 +235,17 @@ public class PhotoServer
     private final int _maxContentLength;
     private final String _bucketName;
     private final String _staticFileRoot;
-    private final FileContentInfo _defaultFile;
+    private final FileContentInfoProvider _staticFileProvider;
+    private final FileContentInfoProvider _staticFileCache;
 
     static ConcurrentHashMap<String, FileContentInfo> fileCache = new ConcurrentHashMap<String, FileContentInfo>();
 
-    public static AmazonPhotoServerChannelPipelineFactory create(QueryStringAuthGenerator s3AuthGenerator,
-                                                                 String s3BucketName,
-                                                                 ClientSocketChannelFactory cf,
-                                                                 URI amazonHost,
-                                                                 int maxContentLength,
-                                                                 String staticFileRoot)
-        throws IOException
-    {
-      FileContentInfo defaultFile = Util.getDefaultFile(staticFileRoot);
-
-      return new AmazonPhotoServerChannelPipelineFactory(
-        s3AuthGenerator,
-        s3BucketName,
-        cf,
-        amazonHost,
-        maxContentLength,
-        staticFileRoot,
-        defaultFile);
-    }
-
-    public AmazonPhotoServerChannelPipelineFactory(
-      QueryStringAuthGenerator s3AuthGenerator,
-      String s3BucketName,
-      ClientSocketChannelFactory cf,
-      URI amazonHost,
-      int maxContentLength,
-      String staticFileRoot,
-      FileContentInfo defaultFile)
+    public AmazonPhotoServerChannelPipelineFactory(QueryStringAuthGenerator s3AuthGenerator,
+                                                   String s3BucketName,
+                                                   ClientSocketChannelFactory cf,
+                                                   URI amazonHost,
+                                                   int maxContentLength,
+                                                   String staticFileRoot)
     {
       _authGenerator = s3AuthGenerator;
       _bucketName = s3BucketName;
@@ -288,20 +253,18 @@ public class PhotoServer
       _amazonHost = amazonHost;
       _maxContentLength = maxContentLength;
       _staticFileRoot = staticFileRoot;
-      _defaultFile = defaultFile;
+
+      _staticFileProvider = new StaticFileContentInfoProvider(_staticFileRoot);
+      _staticFileCache = new InsertOnlyFileContentInfoCache(_staticFileProvider);
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
+        throws Exception
     {
       HttpChunkRelayProxy proxy;
 
-      proxy =
-        new S3StandardChunkProxy(
-          _authGenerator,
-          _bucketName,
-          _cf,
-          _amazonHost);
+      proxy = new S3StandardChunkProxy(_authGenerator, _bucketName, _cf, _amazonHost);
 
       String uploadFileRoot = _staticFileRoot + "/uploads";
       proxy = new FileChunkProxy(uploadFileRoot);
@@ -309,9 +272,12 @@ public class PhotoServer
       FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
 
       LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"), new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/d/"), new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
-      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/"), new StaticFileServerHandler(_staticFileRoot, fileCache, _defaultFile));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"),
+                          new HttpChunkProxyHandler(proxy, relayListener, _maxContentLength));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/d/"),
+                          new S3StaticFileServerHandler(_authGenerator, _bucketName, _cf, _amazonHost));
+      localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/"),
+                          new StaticFileServerHandler(_staticFileCache));
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
 
       ChannelPipeline lhPipeline = new DefaultChannelPipeline();
