@@ -48,16 +48,22 @@ public class PhotoServer
   {
     PhotoServer photoServer = new PhotoServer();
 
-    photoServer._bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
-                                                                                   Executors.newCachedThreadPool()));
+    photoServer._bootstrap =
+        new ServerBootstrap(
+            new NioServerSocketChannelFactory(
+                Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool()));
 
-    ChannelPipelineFactory photoServerChannelPipelineFactory = new LocalPhotoServerChannelPipelineFactory((1024 * 1024) * 1024,
-                                                                                                          staticFileRoot + "/uploads",
-                                                                                                          staticFileRoot);
+    ChannelPipelineFactory photoServerChannelPipelineFactory =
+        new LocalPhotoServerChannelPipelineFactory(
+            (1024 * 1024) * 1024,
+            staticFileRoot + "/uploads",
+            staticFileRoot);
 
-    HostRouterHandler hostRouterHandler = createHostRouterHandler(URI.create(String.format("http://localhost:%s",
-                                                                                           port)),
-                                                                  photoServerChannelPipelineFactory);
+    HostRouterHandler hostRouterHandler =
+        createHostRouterHandler(
+            URI.create(String.format("http://localhost:%s", port)),
+            photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
@@ -72,8 +78,8 @@ public class PhotoServer
   {
     PhotoServer photoServer = new PhotoServer();
 
-    photoServer._bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
-                                                                                   Executors.newCachedThreadPool()));
+    photoServer._bootstrap = new ServerBootstrap(
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 
     Executor executor = Executors.newCachedThreadPool();
     ClientSocketChannelFactory cf = new NioClientSocketChannelFactory(executor, executor);
@@ -86,20 +92,19 @@ public class PhotoServer
 
     new File(staticFileRoot).mkdir();
 
-    ChannelPipelineFactory photoServerChannelPipelineFactory = new AmazonPhotoServerChannelPipelineFactory(authGenerator,
-                                                                                                           bucketName,
-                                                                                                           cf,
-                                                                                                           URI.create(
-                                                                                                               String.format(
-                                                                                                                   "http://%s:%s",
-                                                                                                                   remoteHost,
-                                                                                                                   80)),
-                                                                                                           (1024 * 1024) * 1024,
-                                                                                                           staticFileRoot);
+    ChannelPipelineFactory photoServerChannelPipelineFactory =
+        new AmazonPhotoServerChannelPipelineFactory(
+            authGenerator,
+            bucketName,
+            cf,
+            URI.create(String.format("http://%s:%s", remoteHost,80)),
+            (1024 * 1024) * 1024,
+            staticFileRoot);
 
-    HostRouterHandler hostRouterHandler = createHostRouterHandler(URI.create(String.format("http://localhost:%s",
-                                                                                           port)),
-                                                                  photoServerChannelPipelineFactory);
+    HostRouterHandler hostRouterHandler =
+        createHostRouterHandler(
+            URI.create(String.format("http://localhost:%s", port)),
+            photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
@@ -130,7 +135,7 @@ public class PhotoServer
     }
     catch (UnknownHostException e)
     {
-      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+      e.printStackTrace();
     }
 
     for (String hostname : localhostNames)
@@ -237,8 +242,6 @@ public class PhotoServer
     private final String _staticFileRoot;
     private final FileContentInfoProvider _staticFileProvider;
     private final FileContentInfoProvider _staticFileCache;
-
-    static ConcurrentHashMap<String, FileContentInfo> fileCache = new ConcurrentHashMap<String, FileContentInfo>();
 
     public AmazonPhotoServerChannelPipelineFactory(QueryStringAuthGenerator s3AuthGenerator,
                                                    String s3BucketName,
