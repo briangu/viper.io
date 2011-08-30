@@ -1,13 +1,16 @@
 package viper.net.server;
 
 
+import com.thebuzzmedia.imgscalr.Scalr;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -15,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.UUID;
 import javax.activation.MimetypesFileTypeMap;
+import javax.imageio.ImageIO;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.base64.Base64;
@@ -197,5 +201,14 @@ public class Util
     uri = decoder.getPath();
 
     return uri;
+  }
+
+  public static BufferedImage resize(URI uri, int width)
+      throws IOException
+  {
+    BufferedImage srcImage = ImageIO.read(uri.toURL());
+    BufferedImage scaledImage = Scalr.resize(srcImage, width);
+//    ImageIO.write(scaledImage, "PNG", )
+    return scaledImage;
   }
 }

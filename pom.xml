@@ -41,6 +41,13 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.thebuzzmedia</groupId>
+      <artifactId>imgscalr-lib</artifactId>
+      <version>3.2</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>org.armedbear.lisp</groupId>
       <artifactId>abcl</artifactId>
       <version>0.25.0</version>
@@ -107,6 +114,10 @@
   </build>
 
   <repositories>
+    <repository>
+      <id>The Buzz Media Maven Repository</id>
+      <url>http://maven.thebuzzmedia.com</url>
+    </repository>
     <repository>
       <id>repository.jboss.org</id>
       <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
