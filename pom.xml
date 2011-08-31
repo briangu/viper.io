@@ -123,7 +123,7 @@
                             <generateRepository>false</generateRepository>
                             <programs>
                                 <program>
-                                    <mainClass>viper.app.photo.Main</mainClass>
+                                    <mainClass>io.viper.app.photo.Main</mainClass>
                                     <name>photo</name>
                                 </program>
                             </programs>
