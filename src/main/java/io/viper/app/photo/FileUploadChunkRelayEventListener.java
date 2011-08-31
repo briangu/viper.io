@@ -2,6 +2,8 @@ package io.viper.app.photo;
 
 
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.UUID;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -19,7 +21,13 @@ import io.viper.net.server.chunkproxy.HttpChunkRelayEventListener;
 
 public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventListener
 {
+  String _hostname;
   String _fileKey;
+
+  public FileUploadChunkRelayEventListener(String hostname)
+  {
+    _hostname = hostname;
+  }
 
   public void onError(Channel clientChannel)
   {
@@ -45,8 +53,7 @@ public class FileUploadChunkRelayEventListener implements HttpChunkRelayEventLis
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
       JSONObject jsonResponse = new JSONObject();
       jsonResponse.put("success", Boolean.toString(success));
-//      jsonResponse.put("url", String.format("http://f.bingobot.com/%s", _fileKey));
-      jsonResponse.put("url", String.format("http://localhost:18080/d/%s", _fileKey));
+      jsonResponse.put("url", String.format("%s%s", _hostname, _fileKey));
       response.setContent(ChannelBuffers.wrappedBuffer(jsonResponse.toString(2).getBytes("UTF-8")));
       clientChannel.write(response).addListener(ChannelFutureListener.CLOSE);
     }

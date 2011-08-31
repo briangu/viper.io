@@ -55,15 +55,18 @@ public class PhotoServer
                 Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool()));
 
+    String localhost = String.format("http://%s:%s", InetAddress.getLocalHost().getHostName(), port);
+
     ChannelPipelineFactory photoServerChannelPipelineFactory =
         new LocalPhotoServerChannelPipelineFactory(
             (1024 * 1024) * 1024,
             "/tmp/uploads",
-            staticFileRoot);
+            staticFileRoot,
+            localhost + "/d/");
 
     HostRouterHandler hostRouterHandler =
         createHostRouterHandler(
-            URI.create(String.format("http://localhost:%s", port)),
+            URI.create(localhost),
             photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
@@ -90,6 +93,7 @@ public class PhotoServer
     QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret, false);
 
     String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
+    String localhost = String.format("http://%s:%s", InetAddress.getLocalHost().getHostName(), port);
 
     String staticFileRoot = "/Users/bguarrac/scm/viper/src/main/resources/public";
 
@@ -100,11 +104,12 @@ public class PhotoServer
             cf,
             URI.create(String.format("http://%s:%s", remoteHost,80)),
             (1024 * 1024) * 1024,
-            staticFileRoot);
+            staticFileRoot,
+            localhost + "/d/");
 
     HostRouterHandler hostRouterHandler =
         createHostRouterHandler(
-            URI.create(String.format("http://localhost:%s", port)),
+            URI.create(localhost),
             photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
@@ -190,15 +195,19 @@ public class PhotoServer
     private final String _staticFileRoot;
     private final MappedFileServerHandler _staticFileProvider;
     private final FileContentInfoProvider _uploadFileProvider;
+    private final String _downloadHostname;
 
-    static ConcurrentHashMap<String, FileContentInfo> fileCache = new ConcurrentHashMap<String, FileContentInfo>();
-
-    public LocalPhotoServerChannelPipelineFactory(int maxContentLength, String uploadFileRoot, String staticFileRoot)
-      throws IOException, JSONException
+    public LocalPhotoServerChannelPipelineFactory(
+      int maxContentLength,
+      String uploadFileRoot,
+      String staticFileRoot,
+      String downloadHostname)
+        throws IOException, JSONException
     {
       _maxContentLength = maxContentLength;
       _uploadFileRoot = uploadFileRoot;
       _staticFileRoot = staticFileRoot;
+      _downloadHostname = downloadHostname;
 
       _staticFileProvider = MappedFileServerHandler.create(_staticFileRoot);
       _uploadFileProvider = new StaticFileContentInfoProvider(_uploadFileRoot);
@@ -210,7 +219,8 @@ public class PhotoServer
     {
       HttpChunkRelayProxy proxy = new FileChunkProxy(_uploadFileRoot);
 
-      FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
+      FileUploadChunkRelayEventListener relayListener =
+        new FileUploadChunkRelayEventListener(_downloadHostname);
 
       LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
       localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"),
@@ -238,13 +248,16 @@ public class PhotoServer
     private final String _staticFileRoot;
     private final FileContentInfoProvider _staticFileProvider;
     private final FileContentInfoProvider _staticFileCache;
+    private final String _downloadHostname;
 
-    public AmazonPhotoServerChannelPipelineFactory(QueryStringAuthGenerator s3AuthGenerator,
-                                                   String s3BucketName,
-                                                   ClientSocketChannelFactory cf,
-                                                   URI amazonHost,
-                                                   int maxContentLength,
-                                                   String staticFileRoot)
+    public AmazonPhotoServerChannelPipelineFactory(
+      QueryStringAuthGenerator s3AuthGenerator,
+      String s3BucketName,
+      ClientSocketChannelFactory cf,
+      URI amazonHost,
+      int maxContentLength,
+      String staticFileRoot,
+      String downloadHostname)
     {
       _authGenerator = s3AuthGenerator;
       _bucketName = s3BucketName;
@@ -252,6 +265,7 @@ public class PhotoServer
       _amazonHost = amazonHost;
       _maxContentLength = maxContentLength;
       _staticFileRoot = staticFileRoot;
+      _downloadHostname = downloadHostname;
 
       _staticFileProvider = new StaticFileContentInfoProvider(_staticFileRoot);
       _staticFileCache = new InsertOnlyFileContentInfoCache(_staticFileProvider);
@@ -268,7 +282,8 @@ public class PhotoServer
       String uploadFileRoot = _staticFileRoot + "/uploads";
       proxy = new FileChunkProxy(uploadFileRoot);
 
-      FileUploadChunkRelayEventListener relayListener = new FileUploadChunkRelayEventListener();
+      FileUploadChunkRelayEventListener relayListener =
+        new FileUploadChunkRelayEventListener(_downloadHostname);
 
       LinkedHashMap<RouteMatcher, ChannelHandler> localhostRoutes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
       localhostRoutes.put(new UriRouteMatcher(UriRouteMatcher.MatchMode.startsWith, "/u/"),
