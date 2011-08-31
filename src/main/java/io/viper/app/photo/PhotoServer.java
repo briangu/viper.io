@@ -120,8 +120,10 @@ public class PhotoServer
     return photoServer;
   }
 
-  static HostRouterHandler createHostRouterHandler(URI localHost, ChannelPipelineFactory lhPipelineFactory)
-    throws IOException, JSONException
+  static HostRouterHandler createHostRouterHandler(
+    URI localHost,
+    ChannelPipelineFactory lhPipelineFactory)
+      throws IOException, JSONException
   {
     ConcurrentHashMap<String, ChannelPipelineFactory> routes = new ConcurrentHashMap<String, ChannelPipelineFactory>();
 
