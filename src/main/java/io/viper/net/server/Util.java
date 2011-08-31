@@ -37,6 +37,23 @@ public class Util
 {
   static private MimetypesFileTypeMap _fileTypeMap = new MimetypesFileTypeMap();
 
+  public static String getCurrentWorkingDirectory()
+  {
+    File directory = new File (".");
+    String path = null;
+
+    try
+    {
+      path = directory.getCanonicalPath();
+    }
+    catch(Exception e)
+    {
+      e.printStackTrace();
+    }
+
+    return path;
+  }
+
   public static Map<String, FileContentInfo> createFileMap(String rootPath)
     throws IOException, JSONException
   {

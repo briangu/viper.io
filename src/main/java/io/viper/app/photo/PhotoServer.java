@@ -37,6 +37,8 @@ import io.viper.net.server.router.HostRouterHandler;
 import io.viper.net.server.router.RouteMatcher;
 import io.viper.net.server.router.RouterHandler;
 import io.viper.net.server.router.UriRouteMatcher;
+import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
+import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.json.JSONException;
 
 
@@ -45,7 +47,7 @@ public class PhotoServer
   private ServerBootstrap _bootstrap;
 
   public static PhotoServer create(int port, String staticFileRoot)
-    throws URISyntaxException, IOException, JSONException
+    throws Exception, IOException, JSONException
   {
     PhotoServer photoServer = new PhotoServer();
 
@@ -69,15 +71,15 @@ public class PhotoServer
             URI.create(localhost),
             photoServerChannelPipelineFactory);
 
-    ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
+//    ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
-    photoServer._bootstrap.setPipelineFactory(factory);
+    photoServer._bootstrap.setPipelineFactory(photoServerChannelPipelineFactory);
     photoServer._bootstrap.bind(new InetSocketAddress(port));
 
     return photoServer;
   }
 
-  public static PhotoServer createWithS3(int port, String awsId, String awsSecret, String bucketName)
+  public static PhotoServer createWithS3(int port, String awsId, String awsSecret, String bucketName, String staticFileRoot)
     throws URISyntaxException, IOException, JSONException
   {
     PhotoServer photoServer = new PhotoServer();
@@ -94,8 +96,6 @@ public class PhotoServer
 
     String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
     String localhost = String.format("http://%s:%s", InetAddress.getLocalHost().getHostName(), port);
-
-    String staticFileRoot = "/Users/bguarrac/scm/viper/src/main/resources/public";
 
     ChannelPipelineFactory photoServerChannelPipelineFactory =
         new AmazonPhotoServerChannelPipelineFactory(
@@ -234,6 +234,8 @@ public class PhotoServer
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
 
       ChannelPipeline lhPipeline = new DefaultChannelPipeline();
+      lhPipeline.addLast("decoder", new HttpRequestDecoder());
+      lhPipeline.addLast("encoder", new HttpResponseEncoder());
       lhPipeline.addLast("router", new RouterHandler("uri-handlers", localhostRoutes));
 
       return lhPipeline;
