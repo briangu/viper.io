@@ -24,12 +24,12 @@ public class Main
         String awsId = args[0];
         String awsSecret = args[1];
         String bucketName = args[2];
-        photoServer = PhotoServer.createWithS3(3000, awsId, awsSecret, bucketName, staticFileRoot);
+        photoServer = PhotoServer.createWithS3("viper.io", 3000, awsId, awsSecret, bucketName, staticFileRoot);
       }
       else
       {
         new File(staticFileRoot).mkdir();
-        photoServer = PhotoServer.create(3000, staticFileRoot);
+        photoServer = PhotoServer.create("viper.io", 3000, staticFileRoot);
       }
     }
     catch (URISyntaxException e)

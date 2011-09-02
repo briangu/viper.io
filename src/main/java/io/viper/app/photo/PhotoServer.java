@@ -46,7 +46,7 @@ public class PhotoServer
 {
   private ServerBootstrap _bootstrap;
 
-  public static PhotoServer create(int port, String staticFileRoot)
+  public static PhotoServer create(String localhostName, int port, String staticFileRoot)
     throws Exception, IOException, JSONException
   {
     PhotoServer photoServer = new PhotoServer();
@@ -57,7 +57,7 @@ public class PhotoServer
                 Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool()));
 
-    String localhost = String.format("http://%s:%s", InetAddress.getLocalHost().getHostName(), port);
+    String localhost = String.format("http://%s:%s", localhostName, port);
 
     ChannelPipelineFactory photoServerChannelPipelineFactory =
         new LocalPhotoServerChannelPipelineFactory(
@@ -79,7 +79,7 @@ public class PhotoServer
     return photoServer;
   }
 
-  public static PhotoServer createWithS3(int port, String awsId, String awsSecret, String bucketName, String staticFileRoot)
+  public static PhotoServer createWithS3(String localhostName, int port, String awsId, String awsSecret, String bucketName, String staticFileRoot)
     throws URISyntaxException, IOException, JSONException
   {
     PhotoServer photoServer = new PhotoServer();
@@ -95,7 +95,7 @@ public class PhotoServer
     QueryStringAuthGenerator authGenerator = new QueryStringAuthGenerator(awsId, awsSecret, false);
 
     String remoteHost = String.format("%s.s3.amazonaws.com", bucketName);
-    String localhost = String.format("http://%s:%s", InetAddress.getLocalHost().getHostName(), port);
+    String lhname = String.format("http://%s:%s", localhostName, port);
 
     ChannelPipelineFactory photoServerChannelPipelineFactory =
         new AmazonPhotoServerChannelPipelineFactory(
@@ -105,11 +105,11 @@ public class PhotoServer
             URI.create(String.format("http://%s:%s", remoteHost,80)),
             (1024 * 1024) * 1024,
             staticFileRoot,
-            localhost + "/d/");
+            lhname + "/d/");
 
     HostRouterHandler hostRouterHandler =
         createHostRouterHandler(
-            URI.create(localhost),
+            URI.create(lhname),
             photoServerChannelPipelineFactory);
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
