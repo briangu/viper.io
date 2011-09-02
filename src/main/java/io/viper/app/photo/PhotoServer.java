@@ -114,7 +114,7 @@ public class PhotoServer
 
     ServerPipelineFactory factory = new ServerPipelineFactory(hostRouterHandler);
 
-    photoServer._bootstrap.setPipelineFactory(factory);
+    photoServer._bootstrap.setPipelineFactory(photoServerChannelPipelineFactory);
     photoServer._bootstrap.bind(new InetSocketAddress(port));
 
     return photoServer;
@@ -279,12 +279,7 @@ public class PhotoServer
     public ChannelPipeline getPipeline()
         throws Exception
     {
-      HttpChunkRelayProxy proxy;
-
-      proxy = new S3StandardChunkProxy(_authGenerator, _bucketName, _cf, _amazonHost);
-
-      String uploadFileRoot = _staticFileRoot + "/uploads";
-      proxy = new FileChunkProxy(uploadFileRoot);
+      HttpChunkRelayProxy proxy = new S3StandardChunkProxy(_authGenerator, _bucketName, _cf, _amazonHost);
 
       FileUploadChunkRelayEventListener relayListener =
         new FileUploadChunkRelayEventListener(_downloadHostname);
@@ -299,6 +294,8 @@ public class PhotoServer
 //    pipeline.addLast("handler", new WebSocketServerHandler(_listeners));
 
       ChannelPipeline lhPipeline = new DefaultChannelPipeline();
+      lhPipeline.addLast("decoder", new HttpRequestDecoder());
+      lhPipeline.addLast("encoder", new HttpResponseEncoder());
       lhPipeline.addLast("router", new RouterHandler("uri-handlers", localhostRoutes));
 
       return lhPipeline;
