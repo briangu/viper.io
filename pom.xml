@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>viper</groupId>
-  <artifactId>viper</artifactId>
+  <groupId>viper.io</groupId>
+  <artifactId>viper.io</artifactId>
   <version>1.0.0</version>
-  <name>viper</name>
+  <name>viper.io</name>
   <packaging>jar</packaging>
   <description>
     A netty based HTTP server and toolkit.
@@ -40,6 +40,16 @@
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>1.3.2</version>
+    </dependency>
     <dependency>
       <groupId>javax.jms</groupId>
       <artifactId>jms</artifactId>
