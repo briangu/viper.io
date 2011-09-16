@@ -86,7 +86,11 @@ public class Util
       {
         relativePath += "/";
       }
-      fileMap.put(relativePath, getDefaultFile(path));
+      FileContentInfo defaultFile = getDefaultFile(path);
+      if (defaultFile != null)
+      {
+        fileMap.put(relativePath, defaultFile);
+      }
 
       File[] files = dir.listFiles();
 
