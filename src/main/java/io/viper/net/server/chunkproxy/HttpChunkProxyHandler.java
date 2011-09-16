@@ -52,6 +52,7 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
     if (_currentMessage == null)
     {
       final HttpMessage m = (HttpMessage) msg;
+      e.getChannel().setReadable(false);
 
       long contentLength =
         m.containsHeader("Content-Length")
@@ -126,12 +127,13 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
             @Override
             public void onProxyConnected()
             {
-              _chunkRelayProxy.writeChunk(singleChunk);
             }
 
             @Override
             public void onProxyWriteReady()
             {
+              _chunkRelayProxy.writeChunk(singleChunk);
+              destChannel.setReadable(true);
             }
 
             @Override
