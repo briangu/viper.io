@@ -90,6 +90,12 @@ public class JerseyContainerHandler extends SimpleChannelUpstreamHandler
 		_application.handleRequest(cRequest, new Writer(e.getChannel()));
 	}
 
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception
+  {
+    e.getCause().printStackTrace();
+  }
+
 	private String getBaseUri(HttpRequest request)
 	{
 		if (_baseUri != null)
