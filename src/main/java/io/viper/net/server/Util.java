@@ -15,12 +15,15 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Stack;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.activation.MimetypesFileTypeMap;
 import javax.imageio.ImageIO;
+import javax.print.DocFlavor;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.base64.Base64;
@@ -96,16 +99,26 @@ public class Util
         }
         else if (subFile.isFile())
         {
-          File meta = new File(metaFilePath + path);
-          JSONObject metaData = getMetaInfo(meta);
-          String contentType =
-            metaData.has(HttpHeaders.Names.CONTENT_TYPE)
-              ? metaData.getString(HttpHeaders.Names.CONTENT_TYPE)
-              : Util.getContentType(subFile.getPath());
+          File metaFile = new File(metaFilePath + path);
+          JSONObject jsonObject = getMetaInfo(metaFile);
+
+          Map<String, String> meta = new HashMap<String, String>();
+
+          Iterator<String> keys = jsonObject.keys();
+          while(keys.hasNext())
+          {
+            String key = keys.next();
+            meta.put(key, jsonObject.getString(key));
+          }
+
+          if (!meta.containsKey(HttpHeaders.Names.CONTENT_TYPE))
+          {
+            meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(subFile.getPath()));
+          }
 
           fileMap.put(
             subFile.getPath().substring(rootPath.length()),
-            FileContentInfo.create(subFile, contentType));
+            FileContentInfo.create(subFile, meta));
         }
       }
     }
@@ -159,11 +172,12 @@ public class Util
 
     if (foundIndex != null)
     {
-      String contentType = "text/html";
+      Map<String, String> meta = new HashMap<String, String>();
+      meta.put(HttpHeaders.Names.CONTENT_TYPE, "text/html");
 
       FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
       ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), meta);
     }
 
     return result;
@@ -190,11 +204,12 @@ public class Util
 
     if (foundIndex != null)
     {
-      String contentType = "text/html";
+      Map<String, String> meta = new HashMap<String, String>();
+      meta.put(HttpHeaders.Names.CONTENT_TYPE, "text/html");
 
       FileChannel fc = new RandomAccessFile(foundIndex, "r").getChannel();
       ByteBuffer roBuf = fc.map(FileChannel.MapMode.READ_ONLY, 0, (int) fc.size());
-      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), contentType);
+      result = new FileContentInfo(fc, ChannelBuffers.wrappedBuffer(roBuf), meta);
     }
 
     return result;
@@ -218,6 +233,10 @@ public class Util
     else if (filename.endsWith(".css"))
     {
       contentType = "text/css";
+    }
+    else if (filename.endsWith(".png"))
+    {
+      contentType = "image/png";
     }
     else
     {

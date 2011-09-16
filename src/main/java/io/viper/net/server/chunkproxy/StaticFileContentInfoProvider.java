@@ -7,6 +7,12 @@ import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import io.viper.net.server.Util;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class StaticFileContentInfoProvider implements FileContentInfoProvider
@@ -74,25 +80,38 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
 
         if (file.exists())
         {
-          String contentType;
+          Map<String, String> meta = new HashMap<String, String>();
 
-          File meta = new File(_metaFilePath + path);
-          if (meta.exists())
+          File metaFile = new File(_metaFilePath + path);
+          if (metaFile.exists())
           {
-            RandomAccessFile metaRaf = new RandomAccessFile(meta, "r");
-            contentType = metaRaf.readUTF();
+            RandomAccessFile metaRaf = new RandomAccessFile(metaFile, "r");
+            String rawJSON = metaRaf.readUTF();
+            JSONObject jsonObject = new JSONObject(rawJSON);
             metaRaf.close();
+
+            Iterator<String> keys = jsonObject.keys();
+            while(keys.hasNext())
+            {
+              String key = keys.next();
+              meta.put(key, jsonObject.getString(key));
+            }
           }
           else
           {
-            contentType = Util.getContentType(path);
+            meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
+            meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(file.length()));
           }
 
-          result = FileContentInfo.create(file, contentType);
+          result = FileContentInfo.create(file, meta);
         }
       }
     }
     catch (IOException e)
+    {
+      e.printStackTrace();
+    }
+    catch (JSONException e)
     {
       e.printStackTrace();
     }

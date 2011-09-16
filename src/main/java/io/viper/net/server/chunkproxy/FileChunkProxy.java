@@ -8,6 +8,8 @@ import java.nio.channels.FileChannel;
 import java.util.Map;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class FileChunkProxy implements HttpChunkRelayProxy
@@ -96,7 +98,8 @@ public class FileChunkProxy implements HttpChunkRelayProxy
         {
           File meta = new File(_metaFilePath + _objectName);
           RandomAccessFile metaRaf = new RandomAccessFile(meta, "rw");
-          metaRaf.writeUTF(_objectMeta.get(HttpHeaders.Names.CONTENT_TYPE));
+          JSONObject jsonObject = new JSONObject(_objectMeta);
+          metaRaf.writeUTF(jsonObject.toString(2));
           metaRaf.close();
         }
 
@@ -109,8 +112,9 @@ public class FileChunkProxy implements HttpChunkRelayProxy
         _fileChannel.write(chunk.getContent().toByteBuffer());
       }
     }
-    catch (IOException e)
+    catch (Exception e)
     {
+      e.printStackTrace();
       _listener.onProxyError();
       abort();
     }

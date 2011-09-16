@@ -14,6 +14,7 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -67,7 +68,7 @@ public class MappedFileServerHandler extends SimpleChannelUpstreamHandler
     FileContentInfo contentInfo = _fileMap.get(uri);
 
     DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-    response.setHeader(Names.CONTENT_TYPE, contentInfo.contentType);
+    response.setHeader(Names.CONTENT_TYPE, contentInfo.meta.get(HttpHeaders.Names.CONTENT_TYPE));
     setContentLength(response, contentInfo.content.readableBytes());
     response.setContent(contentInfo.content);
     ChannelFuture writeFuture = e.getChannel().write(response);
