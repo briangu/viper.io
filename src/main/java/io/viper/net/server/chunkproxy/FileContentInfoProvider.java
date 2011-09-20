@@ -3,5 +3,6 @@ package io.viper.net.server.chunkproxy;
 
 public interface FileContentInfoProvider
 {
-  public FileContentInfo getFileContent(String rootPath);
+  FileContentInfo getFileContent(String rootPath);
+  void dispose(FileContentInfo info);
 }

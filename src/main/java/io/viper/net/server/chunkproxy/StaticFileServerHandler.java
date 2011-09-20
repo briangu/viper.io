@@ -69,14 +69,21 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
     }
     else
     {
-      DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-      response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
-      setContentLength(response, contentInfo.content.readableBytes());
-      response.setContent(contentInfo.content);
-      ChannelFuture writeFuture = e.getChannel().write(response);
-      if (!isKeepAlive(request))
+      try
       {
-        writeFuture.addListener(ChannelFutureListener.CLOSE);
+        DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
+        setContentLength(response, contentInfo.content.readableBytes());
+        response.setContent(contentInfo.content);
+        ChannelFuture writeFuture = e.getChannel().write(response);
+        if (!isKeepAlive(request))
+        {
+          writeFuture.addListener(ChannelFutureListener.CLOSE);
+        }
+      }
+      finally
+      {
+        _fileCache.dispose(contentInfo);
       }
     }
   }

@@ -45,4 +45,10 @@ public class InsertOnlyFileContentInfoCache implements FileContentInfoProvider
 
     return contentInfo;
   }
+
+  @Override
+  public void dispose(FileContentInfo info)
+  {
+    // NOP
+  }
 }
