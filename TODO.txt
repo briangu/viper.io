@@ -1,9 +1,11 @@
 
-#remove prefix from handlers' uri
+automatic route generation via resource lookup via jersey style
 generalize static file cache to support:
-  no caching
-  #general path caching algorithm
-  #generlize index.html searching
   enable/disable .meta lookup
 attribution
-
+keepalive bugs
+websocket and kafka integration
+play! style auto-compiling integration
+            continuations
+            jobs
+sqlite integration
