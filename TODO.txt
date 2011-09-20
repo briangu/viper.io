@@ -9,3 +9,4 @@ play! style auto-compiling integration
             continuations
             jobs
 sqlite integration
+replace apache http json client with AsyncHttpClient (sonatype)
