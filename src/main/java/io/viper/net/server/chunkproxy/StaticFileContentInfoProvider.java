@@ -21,6 +21,11 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   private final boolean _fromClasspath;
   String _metaFilePath;
 
+  public static StaticFileContentInfoProvider create(String rootPath)
+  {
+    return new StaticFileContentInfoProvider(rootPath);
+  }
+
   public StaticFileContentInfoProvider(String rootPath)
   {
     _fromClasspath = rootPath.startsWith("classpath://");
