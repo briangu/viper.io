@@ -1,7 +1,6 @@
 package io.viper.net.server;
 
 
-import com.thebuzzmedia.imgscalr.Scalr;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -327,14 +326,5 @@ public class Util
     uri = decoder.getPath();
 
     return uri;
-  }
-
-  public static BufferedImage resize(URI uri, int width)
-      throws IOException
-  {
-    BufferedImage srcImage = ImageIO.read(uri.toURL());
-    BufferedImage scaledImage = Scalr.resize(srcImage, width);
-//    ImageIO.write(scaledImage, "PNG", )
-    return scaledImage;
   }
 }

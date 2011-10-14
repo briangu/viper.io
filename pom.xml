@@ -78,18 +78,6 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>com.thebuzzmedia</groupId>
-      <artifactId>imgscalr-lib</artifactId>
-      <version>3.2</version>
-      <type>jar</type>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.armedbear.lisp</groupId>
-      <artifactId>abcl</artifactId>
-      <version>0.25.0</version>
-    </dependency>
-    <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
       <version>1.8</version>
@@ -98,12 +86,6 @@
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.2.5.Final</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.thrift</groupId>
-      <artifactId>libthrift</artifactId>
-      <version>0.6.1</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

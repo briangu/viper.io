@@ -160,9 +160,15 @@ public class WebSocketServerHandler extends SimpleChannelUpstreamHandler
     // Upgrade the connection and send the handshake response.
     ChannelPipeline p = ctx.getChannel().getPipeline();
     p.remove("aggregator");
+    p.remove("router");
     p.replace("decoder", "wsdecoder", new WebSocketFrameDecoder());
 
     ctx.getChannel().write(res);
+
+    if (!_listeners.contains(ctx))
+    {
+      _listeners.add(ctx);
+    }
 
     p.replace("encoder", "wsencoder", new WebSocketFrameEncoder());
   }
