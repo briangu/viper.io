@@ -207,6 +207,7 @@ public class WebSocketServerHandler extends SimpleChannelUpstreamHandler
   public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
     throws Exception
   {
+    _listeners.remove(ctx)
     e.getCause().printStackTrace();
     e.getChannel().close();
   }
