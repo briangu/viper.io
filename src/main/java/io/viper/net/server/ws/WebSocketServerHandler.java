@@ -22,6 +22,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Values.*;
 import static org.jboss.netty.handler.codec.http.HttpMethod.*;
 import static org.jboss.netty.handler.codec.http.HttpVersion.*;
 
+import com.amazon.thirdparty.Base64;
 import java.security.MessageDigest;
 
 import java.util.Set;
@@ -129,6 +130,20 @@ public class WebSocketServerHandler extends SimpleChannelUpstreamHandler
       input.writeLong(c);
       ChannelBuffer output = ChannelBuffers.wrappedBuffer(MessageDigest.getInstance("MD5").digest(input.array()));
       res.setContent(output);
+    }
+    else if (req.containsHeader("Sec-WebSocket-Key"))
+    {
+      res.addHeader(SEC_WEBSOCKET_ORIGIN, req.getHeader(SEC_WEBSOCKET_ORIGIN));
+      res.addHeader(SEC_WEBSOCKET_LOCATION, getWebSocketLocation(req));
+      String protocol = req.getHeader(SEC_WEBSOCKET_PROTOCOL);
+      if (protocol != null)
+      {
+        res.addHeader(SEC_WEBSOCKET_PROTOCOL, protocol);
+      }
+      String key1 = req.getHeader("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+      byte[] data = MessageDigest.getInstance("sha1").digest(key1.getBytes("UTF-8"));
+      String accept = Base64.encodeBytes(data);
+      res.addHeader("Sec-WebSocket-Accept", accept);
     }
     else
     {
