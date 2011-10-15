@@ -1,7 +1,6 @@
 package io.viper.net.server.router;
 
 
-import io.viper.net.server.JerseyContainerHandler;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -51,8 +50,9 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
       setHandler(ctx.getPipeline(), m.getValue());
       matchFound = true;
       int routeLength = m.getKey().getRoute().length() - 1;
+
       // TODO: do we need to rewrite urls at all?
-      if (routeLength > 0 && !(m.getValue() instanceof JerseyContainerHandler))
+      if (routeLength > 0)
       {
         request.setUri(request.getUri().substring(routeLength));
       }
