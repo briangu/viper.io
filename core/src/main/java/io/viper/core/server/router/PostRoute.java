@@ -60,7 +60,7 @@ public class PostRoute extends Route {
       }
 
       ChannelFuture writeFuture = e.getChannel().write(response);
-      if (!isKeepAlive(request))
+      if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);
       }

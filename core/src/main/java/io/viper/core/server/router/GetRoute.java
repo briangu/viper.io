@@ -2,10 +2,7 @@ package io.viper.core.server.router;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.*;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +51,9 @@ public class GetRoute extends Route
         response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(wrappedBuffer("{\"status\": true}".getBytes()));
       }
+      else if (!response.getContent().hasArray())
+      {
+      }
 
       if (response.getContent() != null && response.getContent().array().length > 0)
       {
@@ -61,7 +61,7 @@ public class GetRoute extends Route
       }
 
       ChannelFuture writeFuture = e.getChannel().write(response);
-      if (!isKeepAlive(request))
+      if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);
       }
