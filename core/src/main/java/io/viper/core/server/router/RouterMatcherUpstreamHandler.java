@@ -49,14 +49,6 @@ public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
       if (!route.isMatch(request)) continue;
       setHandler(ctx.getPipeline(), route.getChannelHandler());
       matchFound = true;
-
-      // rewrite the url to hide that the subsequent handlers are not at the root
-      int routeLength = route.getRoute().length() - 1;
-      if (routeLength > 0)
-      {
-        request.setUri(request.getUri().substring(routeLength));
-      }
-
       break;
     }
 

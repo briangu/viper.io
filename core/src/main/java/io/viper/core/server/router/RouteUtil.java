@@ -1,15 +1,22 @@
 package io.viper.core.server.router;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RouteUtil
 {
   public static List<String> parsePath(String path)
   {
-    return Arrays.asList(path.split("//"));
+    String[] parts = path.split("\\/");
+
+    List<String> parsedPath = new ArrayList<String>();
+
+    for (String part : parts)
+    {
+      if (part.isEmpty()) continue;
+      parsedPath.add(part);
+    }
+
+    return parsedPath;
   }
 
   public static boolean match(List<String> route, List<String> path)
