@@ -8,6 +8,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
 import static org.jboss.netty.handler.codec.http.HttpVersion.*;
 
 import io.viper.core.server.Util;
+import io.viper.core.server.router.RouteHandler;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -24,14 +25,12 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.util.CharsetUtil;
 
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
 
-/**
- * A file server that can serve files from file system and class path.
- * <p/>
- * If you wish to customize the error message, please sub-class and override sendError().
- * Based on Trustin Lee's original file serving example
- */
-public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
+
+public class StaticFileServerHandler implements RouteHandler
 {
   private final FileContentInfoProvider _fileCache;
 
@@ -41,78 +40,48 @@ public class StaticFileServerHandler extends SimpleChannelUpstreamHandler
   }
 
   @Override
-  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
-    throws Exception
-  {
-    HttpRequest request = (HttpRequest) e.getMessage();
-    if (request.getMethod() != GET)
+  public HttpResponse exec(Map<String, String> args) {
+
+    DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+
+    final String filePath;
+
+    if (!args.containsKey("path"))
     {
-      sendError(ctx, METHOD_NOT_ALLOWED);
-      return;
+      response.setStatus(NOT_FOUND);
+      return response;
     }
 
-    String uri = request.getUri();
-
-    final String path = Util.sanitizeUri(uri);
-    if (path == null)
+    try
     {
-      sendError(ctx, FORBIDDEN);
-      return;
+      filePath = Util.sanitizeUri(args.get("path"));
+    }
+    catch (URISyntaxException e)
+    {
+      e.printStackTrace();
+      response.setStatus(NOT_FOUND);
+      return response;
     }
 
-    FileContentInfo contentInfo = _fileCache.getFileContent(path);
+    FileContentInfo contentInfo = _fileCache.getFileContent(filePath);
 
-    if (contentInfo == null)
-    {
-      sendError(ctx, NOT_FOUND);
-    }
-    else
+    if (contentInfo != null)
     {
       try
       {
-        DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
-        setContentLength(response, contentInfo.content.readableBytes());
         response.setContent(contentInfo.content);
-        ChannelFuture writeFuture = e.getChannel().write(response);
-        if (!isKeepAlive(request))
-        {
-          writeFuture.addListener(ChannelFutureListener.CLOSE);
-        }
       }
       finally
       {
         _fileCache.dispose(contentInfo);
       }
     }
-  }
-
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
-    throws Exception
-  {
-    Channel ch = e.getChannel();
-    Throwable cause = e.getCause();
-    if (cause instanceof TooLongFrameException)
+    else
     {
-      sendError(ctx, BAD_REQUEST);
-      return;
+      response.setStatus(NOT_FOUND);
     }
 
-    cause.printStackTrace();
-    if (ch.isConnected())
-    {
-      sendError(ctx, INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
-  {
-    HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
-    response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
-    response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
-
-    // Close the connection as soon as the error message is sent.
-    ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+    return response;
   }
 }

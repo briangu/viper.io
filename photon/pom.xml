@@ -34,9 +34,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>viper.io</groupId>
-      <artifactId>viper.io</artifactId>
-      <version>1.0.0</version>
+      <groupId>io.viper</groupId>
+      <artifactId>io.viper.core</artifactId>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -72,13 +72,6 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>zookeeper</artifactId>
       <version>3.3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sna-projects.kafka</groupId>
-      <artifactId>kafka</artifactId>
-      <version>0.7</version>
-      <type>jar</type>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.thebuzzmedia</groupId>

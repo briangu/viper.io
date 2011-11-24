@@ -10,21 +10,21 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 
-public class RouterHandler extends SimpleChannelUpstreamHandler
+public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
 {
   private static final ChannelHandler HANDLER_404 = new StatusResponseHandler("Not found", 404);
 
   private final String _handlerName;
 
-  LinkedHashMap<RouteMatcher, ChannelHandler> _routes = new LinkedHashMap<RouteMatcher, ChannelHandler>();
+  List<Route> _routes = new ArrayList<Route>();
 
-  public RouterHandler(
+  public RouterMatcherUpstreamHandler(
     String handlerName,
-    LinkedHashMap<RouteMatcher, ChannelHandler> routes)
+    List<Route> routes)
   {
     _handlerName = handlerName;
     _routes = routes;
@@ -44,18 +44,19 @@ public class RouterHandler extends SimpleChannelUpstreamHandler
 
     boolean matchFound = false;
 
-    for (Map.Entry<RouteMatcher, ChannelHandler> m : _routes.entrySet())
+    for (Route route : _routes)
     {
-      if (!m.getKey().match(request)) continue;
-      setHandler(ctx.getPipeline(), m.getValue());
+      if (!route.isMatch(request)) continue;
+      setHandler(ctx.getPipeline(), route.getChannelHandler());
       matchFound = true;
-      int routeLength = m.getKey().getRoute().length() - 1;
 
-      // TODO: do we need to rewrite urls at all?
+      // rewrite the url to hide that the subsequent handlers are not at the root
+      int routeLength = route.getRoute().length() - 1;
       if (routeLength > 0)
       {
         request.setUri(request.getUri().substring(routeLength));
       }
+
       break;
     }
 

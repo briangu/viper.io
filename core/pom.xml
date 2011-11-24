@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>io.viper.core</groupId>
-  <artifactId>viper.io</artifactId>
-  <version>1.0.0</version>
-  <name>viper.io</name>
+  <groupId>io.viper</groupId>
+  <artifactId>io.viper.core</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>io.viper.core</name>
   <packaging>jar</packaging>
   <description>
     A netty based HTTP server and toolkit.
@@ -33,6 +33,11 @@
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>httpjsonclient</groupId>
+      <artifactId>httpjsonclient</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
@@ -62,13 +67,6 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>zookeeper</artifactId>
       <version>3.3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sna-projects.kafka</groupId>
-      <artifactId>kafka</artifactId>
-      <version>0.7</version>
-      <type>jar</type>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.jboss.netty</groupId>
