@@ -10,6 +10,14 @@
     <version>1.0</version>
     <name>viper.io libraries and applications</name>
 
+    <licenses>
+      <license>
+        <name>Apache 2.0 License</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+
     <modules>
         <module>core</module>
         <module>photon</module>
