@@ -20,11 +20,13 @@ public abstract class Route extends SimpleChannelUpstreamHandler
   protected String _rawRoute;
   protected List<String> _route;
   protected RouteHandler _handler;
+  protected HttpMethod _method;
 
-  public Route(String route, RouteHandler handler) {
+  protected Route(String route, RouteHandler handler, HttpMethod method) {
     _rawRoute = route;
     _handler = handler;
     _route = RouteUtil.parsePath(route);
+    _method = method;
   }
 
   public String getRoute() {
@@ -36,7 +38,7 @@ public abstract class Route extends SimpleChannelUpstreamHandler
   }
 
   public boolean isMatch(HttpRequest request) {
-    if (!request.getMethod().equals(HttpMethod.POST)) return false;
+    if (!request.getMethod().equals(_method)) return false;
 
     List<String> path = RouteUtil.parsePath(request.getUri());
     boolean isMatch = RouteUtil.match(_route, path);

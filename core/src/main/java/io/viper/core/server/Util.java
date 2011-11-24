@@ -23,12 +23,12 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.base64.Base64;
 import org.jboss.netty.handler.codec.base64.Base64Dialect;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.util.CharsetUtil;
 import io.viper.core.server.file.FileContentInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static org.jboss.netty.buffer.ChannelBuffers.*;
 
 
 public class Util
@@ -322,5 +322,12 @@ public class Util
     uri = decoder.getPath();
 
     return uri;
+  }
+
+  public static HttpResponse createResponse(JSONObject obj)
+  {
+    DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+    response.setContent(wrappedBuffer(obj.toString().getBytes()));
+    return response;
   }
 }

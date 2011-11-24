@@ -16,7 +16,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class PostRoute extends Route {
 
   public PostRoute(String route, RouteHandler handler) {
-    super(route, handler);
+    super(route, handler, HttpMethod.POST);
   }
 
   @Override
