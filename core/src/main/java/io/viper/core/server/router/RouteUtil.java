@@ -51,7 +51,7 @@ public class RouteUtil
       }
       else
       {
-        args.put(varName, join(path.subList(i, path.size()-1), "/"));
+        args.put(varName, join(path.subList(i, path.size()), "/"));
       }
     }
 
@@ -68,7 +68,7 @@ public class RouteUtil
       sb.append(delim);
     }
 
-    sb.append(s.get(s.size()-1));
+    if (s.size() > 0) sb.append(s.get(s.size()-1));
 
     return sb.toString();
   }
