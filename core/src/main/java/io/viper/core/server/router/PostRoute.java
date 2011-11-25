@@ -3,7 +3,9 @@ package io.viper.core.server.router;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
+import org.json.JSONObject;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +45,23 @@ public class PostRoute extends Route {
     Map<String, String> args = RouteUtil.extractPathArgs(_route, path);
 
     ChannelBuffer content = request.getContent();
+
+    if (!content.hasArray())
+    {
+      sendError(ctx, BAD_REQUEST);
+      return;
+    }
+
+    String rawJson = new String(content.array(), "UTF-8");
+
+    JSONObject json = new JSONObject(rawJson);
+
+    Iterator keys = json.keys();
+    while(keys.hasNext())
+    {
+      String key = keys.next().toString();
+      args.put(key, json.getString(key));
+    }
 
     try
     {

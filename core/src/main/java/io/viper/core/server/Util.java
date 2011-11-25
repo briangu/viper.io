@@ -324,7 +324,26 @@ public class Util
     return uri;
   }
 
-  public static HttpResponse createResponse(JSONObject obj)
+  public static JSONObject createJson(Object... args) throws JSONException
+  {
+    if (args.length %2 != 0) throw new IllegalArgumentException("missing last value: args require key/value pairs");
+
+    JSONObject obj = new JSONObject();
+
+    for (int i = 0; i < args.length; i += 2)
+    {
+      obj.put(args[i].toString(), args[i+1]);
+    }
+
+    return obj;
+  }
+
+  public static HttpResponse createJsonResponse(Object... args) throws JSONException
+  {
+    return Util.createJsonResponse(createJson(args));
+  }
+
+  public static HttpResponse createJsonResponse(JSONObject obj)
   {
     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
     response.setContent(wrappedBuffer(obj.toString().getBytes()));

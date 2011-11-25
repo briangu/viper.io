@@ -1,4 +1,4 @@
-package io.viper.app.photon;
+package cloudcmd.srv.photon;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
@@ -204,7 +204,7 @@ public class PhotoServer
   @ApplicationPath("/photos/")
   public static class PhotoApplication extends PackagesResourceConfig {
     public PhotoApplication() {
-        super("io.viper.app.photon");
+        super("cloudcmd.srv.photon");
     }
   }
 

@@ -1,4 +1,4 @@
-package io.viper.app.photon;
+package cloudcmd.srv.photon;
 
 import io.viper.net.common.HttpJSONClient;
 import java.io.IOException;

@@ -156,7 +156,7 @@
                             <generateRepository>false</generateRepository>
                             <programs>
                                 <program>
-                                    <mainClass>io.viper.app.photon.Main</mainClass>
+                                    <mainClass>cloudcmd.srv.Main</mainClass>
                                     <name>photo</name>
                                 </program>
                             </programs>
@@ -170,7 +170,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>io.viper.app.photon.Main</mainClass>
+              <mainClass>cloudcmd.srv.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

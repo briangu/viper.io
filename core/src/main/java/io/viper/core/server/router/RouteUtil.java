@@ -6,6 +6,13 @@ public class RouteUtil
 {
   public static List<String> parsePath(String path)
   {
+    int queryParamStart = path.indexOf("?");
+
+    if (queryParamStart > 0)
+    {
+      path = path.substring(0, path.indexOf("?"));
+    }
+
     String[] parts = path.split("\\/");
 
     List<String> parsedPath = new ArrayList<String>();

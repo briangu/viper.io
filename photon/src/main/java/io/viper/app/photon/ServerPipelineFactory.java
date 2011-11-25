@@ -1,4 +1,4 @@
-package io.viper.app.photon;
+package cloudcmd.srv.photon;
 
 
 import org.jboss.netty.channel.ChannelPipeline;
