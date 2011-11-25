@@ -1,6 +1,5 @@
 package io.viper.core.server.router;
 
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
 
