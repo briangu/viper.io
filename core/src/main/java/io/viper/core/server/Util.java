@@ -313,8 +313,7 @@ public class Util
 
     // Simplistic dumb security check.
     // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + ".") || uri.contains("." + File.separator) || uri.startsWith(".") || uri.endsWith(
-        "."))
+    if (uri.contains(File.separator + ".") || uri.contains("." + File.separator) || uri.startsWith(".") || uri.endsWith("."))
     {
       return null;
     }
@@ -347,6 +346,7 @@ public class Util
   public static RouteResponse createJsonResponse(JSONObject obj)
   {
     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+    response.setHeader("Content-Type", "application/json");
     response.setContent(wrappedBuffer(obj.toString().getBytes()));
     return new RouteResponse(response);
   }
