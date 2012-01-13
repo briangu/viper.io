@@ -1,6 +1,8 @@
 package io.viper.core.server.router;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.*;
 
 public class RouteUtil
@@ -28,18 +30,24 @@ public class RouteUtil
   }
 
   public static Map<String, String> extractQueryParams(URI uri)
+    throws UnsupportedEncodingException
+  {
+    return extractQueryParams(uri.getQuery());
+  }
+
+  public static Map<String, String> extractQueryParams(String queryString)
+    throws UnsupportedEncodingException
   {
     Map<String, String> map = new HashMap<String, String>();
     
-    String query = uri.getQuery();
-    if (query != null)
+    if (queryString != null)
     {
-      String[] parts = uri.getQuery().split("&");
+      String[] parts = queryString.split("&");
       for (String part : parts)
       {
         String[] pair = part.split("=");
         if (pair.length != 2) continue;
-        map.put(pair[0], pair[1]);
+        map.put(pair[0], URLDecoder.decode(pair[1], "UTF-8"));
       }
     }
 

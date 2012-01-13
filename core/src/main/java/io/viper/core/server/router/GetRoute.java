@@ -76,6 +76,7 @@ public class GetRoute extends RestRoute
         }
       });
 
+      // TODO: why do we always have to close the channel?? what are we doing wrong?
       if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);

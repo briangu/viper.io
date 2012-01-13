@@ -54,15 +54,22 @@ public class PostRoute extends RestRoute {
       return;
     }
 
-    String rawJson = new String(content.array(), "UTF-8");
+    String rawContent = new String(content.array(), "UTF-8");
 
-    JSONObject json = new JSONObject(rawJson);
-
-    Iterator keys = json.keys();
-    while(keys.hasNext())
+    if (rawContent.startsWith("{"))
     {
-      String key = keys.next().toString();
-      args.put(key, json.getString(key));
+      JSONObject json = new JSONObject(rawContent);
+
+      Iterator keys = json.keys();
+      while(keys.hasNext())
+      {
+        String key = keys.next().toString();
+        args.put(key, json.getString(key));
+      }
+    }
+    else
+    {
+      args.putAll(RouteUtil.extractQueryParams(rawContent));
     }
 
     try
