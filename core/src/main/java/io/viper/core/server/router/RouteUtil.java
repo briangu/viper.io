@@ -1,5 +1,6 @@
 package io.viper.core.server.router;
 
+import java.net.URI;
 import java.util.*;
 
 public class RouteUtil
@@ -26,6 +27,25 @@ public class RouteUtil
     return parsedPath;
   }
 
+  public static Map<String, String> extractQueryParams(URI uri)
+  {
+    Map<String, String> map = new HashMap<String, String>();
+    
+    String query = uri.getQuery();
+    if (query != null)
+    {
+      String[] parts = uri.getQuery().split("&");
+      for (String part : parts)
+      {
+        String[] pair = part.split("=");
+        if (pair.length != 2) continue;
+        map.put(pair[0], pair[1]);
+      }
+    }
+
+    return map;
+  }
+  
   public static boolean match(List<String> route, List<String> path)
   {
     if (path.size() < route.size()) return false;

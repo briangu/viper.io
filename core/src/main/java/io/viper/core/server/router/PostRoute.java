@@ -1,5 +1,6 @@
 package io.viper.core.server.router;
 
+import java.net.URI;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
@@ -43,6 +44,7 @@ public class PostRoute extends RestRoute {
     List<String> path = RouteUtil.parsePath(request.getUri());
 
     Map<String, String> args = RouteUtil.extractPathArgs(_route, path);
+    args.putAll(RouteUtil.extractQueryParams(new URI(request.getUri())));
 
     ChannelBuffer content = request.getContent();
 
