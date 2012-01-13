@@ -2,6 +2,7 @@ package io.viper.core.server.file;
 
 
 import io.viper.core.server.Util;
+import io.viper.core.server.router.Route;
 import java.util.HashMap;
 import java.util.Map;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -12,15 +13,13 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 
 
-public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
+public class HttpChunkProxyHandler extends Route
 {
-
   private volatile HttpMessage _currentMessage;
   private volatile Channel _destChannel;
   private final int _maxContentLength;
@@ -29,10 +28,13 @@ public class HttpChunkProxyHandler extends SimpleChannelUpstreamHandler
   private final HttpChunkRelayEventListener _relayListener;
 
   public HttpChunkProxyHandler(
+    String route,
     HttpChunkRelayProxy chunkRelayProxy,
     HttpChunkRelayEventListener relayListener,
     int maxContentLength)
   {
+    super(route);
+
     _chunkRelayProxy = chunkRelayProxy;
     _relayListener = relayListener;
     _maxContentLength = maxContentLength;

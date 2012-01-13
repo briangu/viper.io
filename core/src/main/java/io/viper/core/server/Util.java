@@ -1,6 +1,7 @@
 package io.viper.core.server;
 
 
+import io.viper.core.server.router.RouteResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -338,15 +339,15 @@ public class Util
     return obj;
   }
 
-  public static HttpResponse createJsonResponse(Object... args) throws JSONException
+  public static RouteResponse createJsonResponse(Object... args) throws JSONException
   {
     return Util.createJsonResponse(createJson(args));
   }
 
-  public static HttpResponse createJsonResponse(JSONObject obj)
+  public static RouteResponse createJsonResponse(JSONObject obj)
   {
     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
     response.setContent(wrappedBuffer(obj.toString().getBytes()));
-    return response;
+    return new RouteResponse(response);
   }
 }

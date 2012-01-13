@@ -15,7 +15,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class PostRoute extends Route {
+public class PostRoute extends RestRoute {
 
   public PostRoute(String route, RouteHandler handler) {
     super(route, handler, HttpMethod.POST);
@@ -65,7 +65,8 @@ public class PostRoute extends Route {
 
     try
     {
-      HttpResponse response = _handler.exec(args);
+      final RouteResponse routeResponse = _handler.exec(args);
+      HttpResponse response = routeResponse.HttpResponse;
 
       if (response == null)
       {
@@ -79,6 +80,16 @@ public class PostRoute extends Route {
       }
 
       ChannelFuture writeFuture = e.getChannel().write(response);
+      writeFuture.addListener(new ChannelFutureListener()
+      {
+        @Override
+        public void operationComplete(ChannelFuture channelFuture)
+          throws Exception
+        {
+          routeResponse.dispose();
+        }
+      });
+
       if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);

@@ -40,7 +40,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
     }
     else
     {
-      _rootPath = rootPath;
+      _rootPath = rootPath.endsWith("/") ? rootPath : rootPath + "/";
     }
 
     _rootPath = _rootPath.replace(File.separatorChar, '/');

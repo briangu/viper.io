@@ -9,6 +9,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.*;
 
 import io.viper.core.server.Util;
 import io.viper.core.server.router.RouteHandler;
+import io.viper.core.server.router.RouteResponse;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -40,8 +41,8 @@ public class StaticFileServerHandler implements RouteHandler
   }
 
   @Override
-  public HttpResponse exec(Map<String, String> args) {
-
+  public RouteResponse exec(Map<String, String> args)
+  {
     DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 
     final String filePath;
@@ -49,7 +50,7 @@ public class StaticFileServerHandler implements RouteHandler
     if (!args.containsKey("path"))
     {
       response.setStatus(NOT_FOUND);
-      return response;
+      return new RouteResponse(response);
     }
 
     try
@@ -60,28 +61,28 @@ public class StaticFileServerHandler implements RouteHandler
     {
       e.printStackTrace();
       response.setStatus(NOT_FOUND);
-      return response;
+      return new RouteResponse(response);
     }
 
-    FileContentInfo contentInfo = _fileCache.getFileContent(filePath);
+    final FileContentInfo contentInfo = _fileCache.getFileContent(filePath);
 
     if (contentInfo != null)
     {
-      try
-      {
-        response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
-        response.setContent(contentInfo.content);
-      }
-      finally
-      {
-        _fileCache.dispose(contentInfo);
-      }
+      response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
+      response.setContent(contentInfo.content);
+
+      return new RouteResponse(response, new RouteResponse.RouteResponseDispose(){
+        @Override
+        public void dispose()
+        {
+          _fileCache.dispose(contentInfo);
+        }
+      });
     }
     else
     {
       response.setStatus(NOT_FOUND);
+      return new RouteResponse(response);
     }
-
-    return response;
   }
 }

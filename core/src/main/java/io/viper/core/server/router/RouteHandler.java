@@ -6,5 +6,5 @@ import java.util.Map;
 
 public interface RouteHandler
 {
-  HttpResponse exec(Map<String, String> args) throws Exception;
+  RouteResponse exec(Map<String, String> args) throws Exception;
 }

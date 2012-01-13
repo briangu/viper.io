@@ -13,7 +13,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_A
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class GetRoute extends Route
+public class GetRoute extends RestRoute
 {
   public GetRoute(String route, RouteHandler handler)
   {
@@ -43,27 +43,42 @@ public class GetRoute extends Route
 
     try
     {
-      HttpResponse response = _handler.exec(args);
+      final RouteResponse routeResponse = _handler.exec(args);
+
+      HttpResponse response = routeResponse.HttpResponse;
 
       if (response == null)
       {
         response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(wrappedBuffer("{\"status\": true}".getBytes()));
       }
-      else if (!response.getContent().hasArray())
+      else
       {
-      }
-
-      if (response.getContent() != null && response.getContent().array().length > 0)
-      {
-        setContentLength(response, response.getContent().array().length);
+        if (response.getContent().hasArray())
+        {
+          if (response.getContent().array().length > 0)
+          {
+            setContentLength(response, response.getContent().array().length);
+          }
+        }
       }
 
       ChannelFuture writeFuture = e.getChannel().write(response);
+      writeFuture.addListener(new ChannelFutureListener()
+      {
+        @Override
+        public void operationComplete(ChannelFuture channelFuture)
+          throws Exception
+        {
+          routeResponse.dispose();
+        }
+      });
+
       if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);
       }
+      writeFuture.addListener(ChannelFutureListener.CLOSE);
     }
     catch (Exception ex)
     {
