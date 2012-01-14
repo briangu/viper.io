@@ -1,6 +1,7 @@
 package io.viper.core.server.file;
 
 
+import com.thebuzzmedia.imgscalr.AsyncScalr;
 import com.thebuzzmedia.imgscalr.Scalr;
 import io.viper.core.server.Util;
 import java.awt.image.BufferedImage;
@@ -11,6 +12,8 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.imageio.ImageIO;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.json.JSONException;
@@ -65,15 +68,19 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
           {
             BufferedImage image = ImageIO.read(srcFile);
 
-            BufferedImage thumbnail = Scalr.resize(
+            Future<BufferedImage> future = AsyncScalr.resize(
                 image,
                 Scalr.Method.SPEED,
                 Scalr.Mode.FIT_TO_WIDTH,
-                150,
-                100,
+                320,
+                240,
                 Scalr.OP_ANTIALIAS);
 
-            ImageIO.write(thumbnail, "jpg", file);
+            BufferedImage thumbnail = future.get();
+            if (thumbnail != null)
+            {
+              ImageIO.write(thumbnail, "jpg", file);
+            }
           }
         }
 
@@ -111,6 +118,14 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
       e.printStackTrace();
     }
     catch (JSONException e)
+    {
+      e.printStackTrace();
+    }
+    catch (InterruptedException e)
+    {
+      e.printStackTrace();
+    }
+    catch (ExecutionException e)
     {
       e.printStackTrace();
     }
