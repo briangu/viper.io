@@ -67,7 +67,7 @@ public class HttpChunkProxyHandler extends Route
       Map<String, String> meta = new HashMap<String, String>();
       if (filename != null) meta.put("filename", filename);
       meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
-      String fileKey = _relayListener.onStart(meta);
+      final String fileKey = _relayListener.onStart(meta);
 
       if (m.isChunked())
       {
@@ -98,7 +98,7 @@ public class HttpChunkProxyHandler extends Route
             @Override
             public void onProxyCompleted()
             {
-              _relayListener.onCompleted(_destChannel);
+              _relayListener.onCompleted(fileKey, _destChannel);
             }
 
             @Override
@@ -146,7 +146,7 @@ public class HttpChunkProxyHandler extends Route
             @Override
             public void onProxyCompleted()
             {
-              _relayListener.onCompleted(destChannel);
+              _relayListener.onCompleted(fileKey, destChannel);
             }
 
             @Override
