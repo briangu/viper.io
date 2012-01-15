@@ -72,8 +72,8 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
                 image,
                 Scalr.Method.SPEED,
                 Scalr.Mode.FIT_TO_WIDTH,
-                320,
-                240,
+                640,
+                480,
                 Scalr.OP_ANTIALIAS);
 
             BufferedImage thumbnail = future.get();

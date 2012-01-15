@@ -49,8 +49,7 @@ public class StaticFileServerHandler implements RouteHandler
 
     if (!args.containsKey("path"))
     {
-      response.setStatus(NOT_FOUND);
-      return new RouteResponse(response);
+      args.put("path", "/");
     }
 
     try
