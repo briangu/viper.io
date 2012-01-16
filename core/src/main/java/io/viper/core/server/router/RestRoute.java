@@ -1,31 +1,29 @@
 package io.viper.core.server.router;
 
 
+import java.net.URI;
 import java.util.List;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
+import java.util.Map;
+import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.util.CharsetUtil;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
 public abstract class RestRoute extends Route
 {
-  protected String _rawRoute;
   protected RouteHandler _handler;
   protected HttpMethod _method;
 
@@ -39,5 +37,67 @@ public abstract class RestRoute extends Route
   public boolean isMatch(HttpRequest request)
   {
     return (super.isMatch(request) && request.getMethod().equals(_method));
+  }
+
+  @Override
+  public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+
+    if (!(e instanceof MessageEvent) || !(((MessageEvent) e).getMessage() instanceof HttpRequest))
+    {
+      super.handleUpstream(ctx, e);
+      return;
+    }
+
+    HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
+
+    List<String> path = RouteUtil.parsePath(request.getUri());
+
+    Map<String, String> args = RouteUtil.extractPathArgs(_route, path);
+    args.putAll(RouteUtil.extractQueryParams(new URI(request.getUri())));
+
+    try
+    {
+      final RouteResponse routeResponse = _handler.exec(args);
+
+      HttpResponse response = routeResponse.HttpResponse;
+
+      if (response == null)
+      {
+        response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.setContent(wrappedBuffer("{\"status\": true}".getBytes()));
+      }
+      else
+      {
+        if (response.getContent().hasArray())
+        {
+          if (response.getContent().array().length > 0)
+          {
+            setContentLength(response, response.getContent().array().length);
+          }
+        }
+      }
+
+      ChannelFuture writeFuture = e.getChannel().write(response);
+      writeFuture.addListener(new ChannelFutureListener()
+      {
+        @Override
+        public void operationComplete(ChannelFuture channelFuture)
+          throws Exception
+        {
+          routeResponse.dispose();
+        }
+      });
+
+      // TODO: why do we always have to close the channel?? what are we doing wrong?
+      if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
+      {
+        writeFuture.addListener(ChannelFutureListener.CLOSE);
+      }
+      writeFuture.addListener(ChannelFutureListener.CLOSE);
+    }
+    catch (Exception ex)
+    {
+      ex.printStackTrace();
+    }
   }
 }
