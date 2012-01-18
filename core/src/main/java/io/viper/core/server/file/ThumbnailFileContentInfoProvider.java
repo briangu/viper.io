@@ -66,9 +66,11 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
 
           if (srcFile.exists())
           {
-            BufferedImage image = ImageIO.read(srcFile);
+            try
+            {
+              BufferedImage image = ImageIO.read(srcFile);
 
-            Future<BufferedImage> future = AsyncScalr.resize(
+              Future<BufferedImage> future = AsyncScalr.resize(
                 image,
                 Scalr.Method.SPEED,
                 Scalr.Mode.FIT_TO_WIDTH,
@@ -76,10 +78,15 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
                 480,
                 Scalr.OP_ANTIALIAS);
 
-            BufferedImage thumbnail = future.get();
-            if (thumbnail != null)
+              BufferedImage thumbnail = future.get();
+              if (thumbnail != null)
+              {
+                ImageIO.write(thumbnail, "jpg", file);
+              }
+            }
+            catch (Exception e)
             {
-              ImageIO.write(thumbnail, "jpg", file);
+              file = srcFile;
             }
           }
         }
@@ -118,14 +125,6 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
       e.printStackTrace();
     }
     catch (JSONException e)
-    {
-      e.printStackTrace();
-    }
-    catch (InterruptedException e)
-    {
-      e.printStackTrace();
-    }
-    catch (ExecutionException e)
     {
       e.printStackTrace();
     }
