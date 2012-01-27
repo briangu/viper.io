@@ -1,8 +1,6 @@
 package io.viper.core.server.file;
 
 
-import com.thebuzzmedia.imgscalr.AsyncScalr;
-import com.thebuzzmedia.imgscalr.Scalr;
 import io.viper.core.server.Util;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -15,6 +13,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.imageio.ImageIO;
+import org.imgscalr.AsyncScalr;
+import org.imgscalr.Scalr;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,13 +80,14 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
             {
               BufferedImage image = ImageIO.read(srcFile);
 
-              Future<BufferedImage> future = AsyncScalr.resize(
-                image,
-                Scalr.Method.SPEED,
-                Scalr.Mode.FIT_TO_WIDTH,
-                640,
-                480,
-                Scalr.OP_ANTIALIAS);
+              Future<BufferedImage> future =
+                AsyncScalr.resize(
+                  image,
+                  Scalr.Method.BALANCED,
+                  Scalr.Mode.FIT_TO_WIDTH,
+                  _thumbnailWidth,
+                  _thumbnailHeight,
+                  Scalr.OP_ANTIALIAS);
 
               BufferedImage thumbnail = future.get();
               if (thumbnail != null)
