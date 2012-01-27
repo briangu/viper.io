@@ -1,7 +1,6 @@
 package io.viper.core.server;
 
 
-import httpjsonclient.HttpJSONClient;
 import io.viper.core.server.router.RouteResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -343,14 +342,6 @@ public class Util
   public static RouteResponse createJsonResponse(Object... args) throws JSONException
   {
     return Util.createJsonResponse(createJson(args));
-  }
-
-  public static RouteResponse createJsonResponse(HttpJSONClient.JSONRequestResponse requestResponse)
-  {
-    DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-    response.setHeader("Content-Type", "application/json");
-    response.setContent(wrappedBuffer(requestResponse.JsonResult.toString().getBytes()));
-    return new RouteResponse(response);
   }
 
   public static RouteResponse createJsonResponse(JSONObject obj)

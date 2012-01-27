@@ -23,20 +23,30 @@ import org.json.JSONObject;
 // TODO: do this using chaining
 public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
 {
-  private String _srcRootPath;
-  private String _rootPath;
+  String _srcRootPath;
+  String _rootPath;
   String _metaFilePath;
+  int _thumbnailWidth;
+  int _thumbnailHeight;
 
-  public static ThumbnailFileContentInfoProvider create(String srcRootPath)
+  public static ThumbnailFileContentInfoProvider create(
+          String srcRootPath,
+          int thumbnailWidth,
+          int thumbnailHeight)
   {
-    return new ThumbnailFileContentInfoProvider(srcRootPath);
+    return new ThumbnailFileContentInfoProvider(srcRootPath, thumbnailWidth, thumbnailHeight);
   }
 
-  public ThumbnailFileContentInfoProvider(String srcRootPath)
+  public ThumbnailFileContentInfoProvider(
+          String srcRootPath,
+          int thumbnailWidth,
+          int thumbnailHeight)
   {
     _srcRootPath = srcRootPath.endsWith(File.separator) ? srcRootPath : srcRootPath + File.separator;
     _rootPath = srcRootPath + File.separator + ".thumb" + File.separatorChar;
     _metaFilePath = _rootPath + File.separatorChar + ".meta" + File.separatorChar;
+    _thumbnailWidth = thumbnailWidth;
+    _thumbnailHeight = thumbnailHeight;
 
     new File(_rootPath).mkdirs();
     new File(_metaFilePath).mkdirs();
