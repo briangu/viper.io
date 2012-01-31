@@ -6,7 +6,6 @@
 
   <groupId>io.viper</groupId>
   <artifactId>io.viper</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
   <name>io.viper</name>
   <packaging>pom</packaging>
   <description>A netty based HTTP server and toolkit.</description>
