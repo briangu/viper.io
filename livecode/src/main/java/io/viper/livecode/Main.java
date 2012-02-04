@@ -2,6 +2,7 @@ package io.viper.livecode;
 
 
 import java.io.File;
+import java.util.concurrent.Executors;
 
 
 public class Main
@@ -12,8 +13,8 @@ public class Main
 
     try
     {
-      String localHostName = args[0];
-      Integer localHostPort = Integer.parseInt(args[1]);
+      String localhostName = args[0];
+      Integer localhostAdminPort = Integer.parseInt(args[1]);
       String staticFileRoot = args[2];
       String uploadDir = args[3];
       
@@ -23,8 +24,8 @@ public class Main
       liveCodeServer =
         LiveCodeServer.create(
           1024 * 1024 * 1024,
-          localHostName,
-          localHostPort,
+          localhostName,
+          localhostAdminPort,
           staticFileRoot,
           uploadDir);
 

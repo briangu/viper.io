@@ -1,0 +1,23 @@
+{
+  "host": "localhost",
+  "staticFileRoot": "/",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/code/$path",
+      "routeHandler": "@admin.get.code.java"
+    },
+    {
+      "method": "POST",
+      "path": "/code/$path",
+      "routeHandler": "@admin.post.code.java"
+    },
+    {
+      "method": "GET",
+      "path": "/pi",
+      "routeHandler": "
+        return Math.pi;
+      "
+    }
+  ]
+}
