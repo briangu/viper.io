@@ -31,7 +31,7 @@ public class ViperServer implements ChannelPipelineFactory
     String localhostName,
     int localhostPort,
     String staticFileRoot,
-    List<Route> routes
+    List<Route> routes  // TODO: should take a RouteListFactory
   )
   {
     _maxContentLength = maxContentLength;

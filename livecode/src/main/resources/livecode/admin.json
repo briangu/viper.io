@@ -15,9 +15,7 @@
     {
       "method": "GET",
       "path": "/pi",
-      "routeHandler": "
-        return Math.pi;
-      "
+      "routeHandler": "return ;"
     }
   ]
 }

@@ -6,6 +6,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,6 +83,61 @@ public class ViperServerFactory
     return createRestRoute(method, path, routeHandler);
   }
 
+  static RouteListFactory compileRouteListFactory(final String sourcePath) {
+    try {
+      final CharStringCompiler stringCompiler = ToolProvider.getSystemJavaCompiler();
+      final String qName = null;
+      final String source = FileUtil.readFile(sourcePath);
+      // compile the generated Java source
+      final DiagnosticCollector<JavaFileObject> errs = new DiagnosticCollector<JavaFileObject>();
+      Class<RouteListFactory> compiledFunction = stringCompiler.compile(qName, source, errs,
+        new Class<?>[] { RouteListFactory.class });
+      return compiledFunction.newInstance();
+    } catch (InstantiationException e) {
+    } catch (IllegalAccessException e) {
+    } catch (IOException e) {
+    }
+    return NULL_FUNCTION;
+  }
+
+  private static RouteHandler fancyCompileRouteHandler()
+  {
+    //Compiler.compileClasses("");
+
+    File root = new File(_liveCodeRoot + File.separator + host);
+    File sourceFile = new File(root, classId);
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    compiler.run(null, null, null, sourceFile.getPath());
+
+    RouteHandler routeHandler;
+
+    try
+    {
+      ClassPool pool = ClassPool.getDefault();
+      CtClass ctClass = pool.makeClass(classId);
+      Object newInstance = ctClass.toClass().newInstance();
+      if (!(newInstance instanceof RouteListFactory))
+      {
+        throw new IllegalArgumentException("class does not extend RouteListFactory");
+      }
+      routeHandler = (RouteListFactory)newInstance;
+    }
+    catch (CannotCompileException e)
+    {
+      throw new IllegalArgumentException(classId + " => cannot compile routeHandler: " + e.getMessage());
+    }
+    catch (IllegalAccessException e)
+    {
+      throw new IllegalArgumentException(classId + " => cannot compile routeHandler: " + e.getMessage());
+    }
+    catch (InstantiationException e)
+    {
+      throw new IllegalArgumentException(classId + " => cannot instantiate routeHandler: " + e.getMessage());
+    }
+
+    return routeHandler;
+  }
+  
   private static RouteHandler compileRouteHandler(
     String classId,
     String rawRouteHandler) 
@@ -87,12 +148,11 @@ public class ViperServerFactory
     {
       ClassPool pool = ClassPool.getDefault();
       CtClass ctClass = pool.makeClass(classId);
-      CtMethod ctMethod = CtNewMethod.make(rawRouteHandler, ctClass);
+      ctClass.setInterfaces(new CtClass[] { pool.makeClass("RouteHandler") });
+      CtMethod ctMethod = CtNewMethod.make("public RouteResponse exec(Map<String, String> args) throws Exception { return null; }", ctClass);
+      ctMethod.setBody(rawRouteHandler);
+      ctClass.addMethod(ctMethod);
       Object newInstance = ctClass.toClass().newInstance();
-      if (!(newInstance instanceof RouteHandler))
-      {
-        throw new IllegalArgumentException(classId + " => routeHandler in route not of type RouteHandler: " + rawRouteHandler);
-      }
       routeHandler = (RouteHandler)newInstance;
     }
     catch (CannotCompileException e)

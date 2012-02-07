@@ -59,7 +59,6 @@ public class AdminServerPipelineFactory implements ChannelPipelineFactory
 
     routes.add(new GetRoute("/code/$path", new RouteHandler()
     {
-      @Override
       public RouteResponse exec(Map<String, String> args)
         throws Exception
       {
