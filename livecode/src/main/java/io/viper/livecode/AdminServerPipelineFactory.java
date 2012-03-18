@@ -26,7 +26,7 @@ public class AdminServerPipelineFactory implements ChannelPipelineFactory
   final String _adminServerRoot;
   final FileContentInfoProvider _staticFileProvider;
   final String _adminHostname;
-  final HostRouterHandler _hostRouteHandler;
+  final ViperHostRouterHandler _hostRouteHandler;
 
   public AdminServerPipelineFactory(
     int maxContentLength,
@@ -35,7 +35,7 @@ public class AdminServerPipelineFactory implements ChannelPipelineFactory
     int localhostAdminPort,
     String staticFileRoot,
     String uploadFileRoot,
-    HostRouterHandler hostRouterHandler)
+    ViperHostRouterHandler hostRouterHandler)
       throws IOException, JSONException
   {
     _maxContentLength = maxContentLength;
@@ -73,6 +73,17 @@ public class AdminServerPipelineFactory implements ChannelPipelineFactory
       public RouteResponse exec(Map<String, String> args)
         throws Exception
       {
+        return null;
+      }
+    }));
+
+    routes.add(new PostRoute("/reload", new RouteHandler()
+    {
+      @Override
+      public RouteResponse exec(Map<String, String> args)
+        throws Exception
+      {
+        _hostRouteHandler.reload();
         return null;
       }
     }));

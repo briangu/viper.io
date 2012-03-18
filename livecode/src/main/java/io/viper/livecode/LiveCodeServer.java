@@ -27,12 +27,12 @@ public class LiveCodeServer
     int localhostPublicPort,
     int localhostAdminPort,
     String adminServerRoot,
-    String liveCodeRoot)
+    String serverDefRoot)
       throws Exception
   {
     LiveCodeServer liveCodeServer = new LiveCodeServer();
 
-    HostRouterHandler hostRouterHandler = new HostRouterHandler();
+    ViperHostRouterHandler hostRouterHandler = new ViperHostRouterHandler(serverDefRoot);
 
     liveCodeServer._publicServers = createHostedServers(hostRouterHandler);
 
@@ -42,7 +42,7 @@ public class LiveCodeServer
       localhostPublicPort,
       localhostAdminPort,
       adminServerRoot,
-      liveCodeRoot,
+      serverDefRoot,
       hostRouterHandler);
 
     _allChannels.add(liveCodeServer._publicServers.bind(new InetSocketAddress(localhostPublicPort)));
@@ -57,8 +57,8 @@ public class LiveCodeServer
     int localhostPublicPort,
     int localhostAdminPort,
     String adminServerRoot,
-    String liveCodeRoot,
-    HostRouterHandler hostRouterHandler)
+    String serverDefRoot,
+    ViperHostRouterHandler hostRouterHandler)
       throws Exception
   {
     ServerBootstrap server = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
@@ -70,7 +70,7 @@ public class LiveCodeServer
         localhostPublicPort,
         localhostAdminPort,
         adminServerRoot,
-        liveCodeRoot,
+        serverDefRoot,
         hostRouterHandler);
 
     server.setOption("tcpNoDelay", true);

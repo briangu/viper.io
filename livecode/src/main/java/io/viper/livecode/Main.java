@@ -13,10 +13,12 @@ public class Main
 
     try
     {
-      String localhostName = args[0];
-      Integer localhostAdminPort = Integer.parseInt(args[1]);
-      String staticFileRoot = args[2];
-      String uploadDir = args[3];
+      int argi = 0;
+      String localhostName = args[argi++];
+      Integer localhostPublicPort = Integer.parseInt(args[argi++]);
+      Integer localhostAdminPort = Integer.parseInt(args[argi++]);
+      String staticFileRoot = args[argi++];
+      String uploadDir = args[argi++];
       
       new File(staticFileRoot).mkdir();
       new File(uploadDir).mkdir();
@@ -25,6 +27,7 @@ public class Main
         LiveCodeServer.create(
           1024 * 1024 * 1024,
           localhostName,
+          localhostPublicPort,
           localhostAdminPort,
           staticFileRoot,
           uploadDir);
