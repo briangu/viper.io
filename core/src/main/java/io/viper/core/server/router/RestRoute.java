@@ -59,6 +59,8 @@ public abstract class RestRoute extends Route
     {
       final RouteResponse routeResponse = _handler.exec(args);
 
+      final Boolean keepalive = isKeepAlive(request);
+      
       HttpResponse response = routeResponse.HttpResponse;
 
       if (response == null)
@@ -68,11 +70,14 @@ public abstract class RestRoute extends Route
       }
       else
       {
-        if (response.getContent().hasArray())
+        if (keepalive)
         {
-          if (response.getContent().array().length > 0)
+          if (response.getContent().hasArray())
           {
-            setContentLength(response, response.getContent().array().length);
+            if (response.getContent().array().length > 0)
+            {
+              setContentLength(response, response.getContent().array().length);
+            }
           }
         }
       }
@@ -88,12 +93,10 @@ public abstract class RestRoute extends Route
         }
       });
 
-      // TODO: why do we always have to close the channel?? what are we doing wrong?
-      if (response.getStatus() != HttpResponseStatus.OK || !isKeepAlive(request))
+      if (!keepalive)
       {
         writeFuture.addListener(ChannelFutureListener.CLOSE);
       }
-      writeFuture.addListener(ChannelFutureListener.CLOSE);
     }
     catch (Exception ex)
     {
