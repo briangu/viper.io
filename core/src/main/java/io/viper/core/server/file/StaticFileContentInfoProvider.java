@@ -76,11 +76,15 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
           }
 
           if (url.toString().startsWith("jar:")) {
-            JarURLConnection conn = (JarURLConnection)url.openConnection();
-            JarFile jarFile = conn.getJarFile();
-            InputStream input = jarFile.getInputStream(conn.getJarEntry());
-            byte[] bytes = Util.copyStream(input);
-            jarFile.close();
+            // TODO: this is a hack to deal with the fact that jarFile seems to be non-thread safe
+            byte[] bytes;
+            synchronized (StaticFileContentInfoProvider.class) {
+              JarURLConnection conn = (JarURLConnection)url.openConnection();
+              JarFile jarFile = conn.getJarFile();
+              InputStream input = jarFile.getInputStream(conn.getJarEntry());
+              bytes = Util.copyStream(input);
+              jarFile.close();
+            }
             meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
             meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(bytes.length));
             result = FileContentInfo.create(bytes, meta);
