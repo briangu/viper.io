@@ -24,6 +24,8 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   private final boolean _fromClasspath;
   String _metaFilePath;
 
+  final String[] defaultFiles = new String[]{"index.html", "index.htm"};
+
   public static StaticFileContentInfoProvider create(String rootPath)
   {
     return new StaticFileContentInfoProvider(rootPath);
@@ -49,17 +51,17 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
     FileChannel fc = null;
     FileContentInfo result = null;
 
-    // TODO: make a touch more secure - chroot to the rescue!
     try
     {
       final String fullPath = _rootPath + path;
 
       if (fullPath.endsWith("/"))
       {
-        result =
-            _fromClasspath
-              ? Util.getDefaultFileFromResources(this.getClass(), fullPath)
-              : Util.getDefaultFile(fullPath);
+        for (String defaultFileName : defaultFiles)
+        {
+          result = getFileContent(fullPath + defaultFileName);
+          if (result != null) break;
+        }
       }
       else
       {
