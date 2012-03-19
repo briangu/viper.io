@@ -2,14 +2,17 @@ package io.viper.core.server.file;
 
 
 import io.viper.core.server.Util;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+
+import java.io.*;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,6 +63,8 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
       }
       else
       {
+        Map<String, String> meta = new HashMap<String, String>();
+
         File file;
 
         if (_fromClasspath)
@@ -69,17 +74,30 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
           {
             return null;
           }
-          file = new File(url.getFile());
+
+          if (url.toString().startsWith("jar:")) {
+            JarURLConnection conn = (JarURLConnection)url.openConnection();
+            JarFile jarFile = conn.getJarFile();
+            InputStream input = jarFile.getInputStream(conn.getJarEntry());
+            byte[] bytes = Util.copyStream(input);
+            jarFile.close();
+            meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
+            meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(bytes.length));
+            result = FileContentInfo.create(bytes, meta);
+            file = null;
+          }
+          else
+          {
+            file = new File(url.getFile());
+          }
         }
         else
         {
           file = new File(fullPath);
         }
 
-        if (file.exists())
+        if (file != null && file.exists())
         {
-          Map<String, String> meta = new HashMap<String, String>();
-
           File metaFile = new File(_metaFilePath + path);
           if (metaFile.exists())
           {
@@ -137,17 +155,6 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   @Override
   public void dispose(FileContentInfo info)
   {
-    if (info.fileChannel != null)
-    {
-      try
-      {
-        info.fileChannel.close();
-        info.content.clear();
-      }
-      catch (IOException e)
-      {
-        e.printStackTrace();
-      }
-    }
+    info.dispose();
   }
 }

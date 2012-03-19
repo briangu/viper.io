@@ -163,17 +163,6 @@ public class ThumbnailFileContentInfoProvider implements FileContentInfoProvider
   @Override
   public void dispose(FileContentInfo info)
   {
-    if (info.fileChannel != null)
-    {
-      try
-      {
-        info.fileChannel.close();
-        info.content.clear();
-      }
-      catch (IOException e)
-      {
-        e.printStackTrace();
-      }
-    }
+    info.dispose();
   }
 }
