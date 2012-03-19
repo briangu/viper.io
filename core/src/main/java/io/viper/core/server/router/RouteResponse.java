@@ -6,8 +6,12 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 
 public class RouteResponse
 {
-  public final HttpResponse HttpResponse;
+  public HttpResponse HttpResponse;
   private RouteResponseDispose DisposeHandler = null;
+
+  public RouteResponse()
+  {
+  }
 
   public interface RouteResponseDispose
   {

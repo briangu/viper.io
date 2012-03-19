@@ -9,11 +9,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.*;
 
 import static org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
@@ -72,16 +68,15 @@ public abstract class RestRoute extends Route
       {
         if (keepalive)
         {
-          if (response.getContent().hasArray())
-          {
-            if (response.getContent().array().length > 0)
-            {
-              setContentLength(response, response.getContent().array().length);
-            }
-          }
+          response.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          setContentLength(response, response.getContent().readableBytes());
+        }
+        else
+        {
+          response.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
         }
       }
-
+      
       ChannelFuture writeFuture = e.getChannel().write(response);
       writeFuture.addListener(new ChannelFutureListener()
       {

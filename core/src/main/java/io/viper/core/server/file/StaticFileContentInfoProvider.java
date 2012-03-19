@@ -29,19 +29,12 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   public StaticFileContentInfoProvider(String rootPath)
   {
     _fromClasspath = rootPath.startsWith("classpath://");
-
     if (_fromClasspath)
     {
-      _rootPath = rootPath.replace("classpath://", "");
-      if (_rootPath.lastIndexOf("/") == _rootPath.length() - 1)
-      {
-        _rootPath = _rootPath.substring(0, _rootPath.length() - 1);
-      }
+      rootPath = rootPath.replace("classpath://", "");
     }
-    else
-    {
-      _rootPath = rootPath.endsWith("/") ? rootPath : rootPath + "/";
-    }
+
+    _rootPath = rootPath.endsWith("/") ? rootPath : rootPath + "/";
 
     _rootPath = _rootPath.replace(File.separatorChar, '/');
     _metaFilePath = _rootPath + File.separatorChar + ".meta" + File.separatorChar;
