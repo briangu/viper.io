@@ -10,7 +10,6 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.jboss.netty.handler.codec.http.HttpHeaders;
