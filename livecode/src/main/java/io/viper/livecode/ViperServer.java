@@ -51,7 +51,7 @@ public class ViperServer implements ChannelPipelineFactory
 
     if (_staticFileRoot != null && _staticFileRoot.length() > 0)
     {
-      StaticFileContentInfoProvider staticFileProvider = StaticFileContentInfoProvider.create(_staticFileRoot);
+      StaticFileContentInfoProvider staticFileProvider = StaticFileContentInfoProvider.create(this.getClass(), _staticFileRoot);
       routes.add(new GetRoute("/$path", new StaticFileServerHandler(staticFileProvider)));
       routes.add(new GetRoute("/", new StaticFileServerHandler(staticFileProvider)));
     }

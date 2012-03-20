@@ -23,16 +23,19 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   private String _rootPath;
   private final boolean _fromClasspath;
   String _metaFilePath;
+  private Class _clazz;
 
   final String[] defaultFiles = new String[]{"index.html", "index.htm"};
 
-  public static StaticFileContentInfoProvider create(String rootPath)
+  public static StaticFileContentInfoProvider create(Class clazz, String rootPath)
   {
-    return new StaticFileContentInfoProvider(rootPath);
+    return new StaticFileContentInfoProvider(clazz, rootPath);
   }
 
-  public StaticFileContentInfoProvider(String rootPath)
+  public StaticFileContentInfoProvider(Class clazz, String rootPath)
   {
+    _clazz = clazz;
+
     _fromClasspath = rootPath.startsWith("classpath://");
     if (_fromClasspath)
     {
@@ -59,7 +62,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
       {
         for (String defaultFileName : defaultFiles)
         {
-          result = getFileContent(fullPath + defaultFileName);
+          result = getFileContent(path + defaultFileName);
           if (result != null) break;
         }
       }
@@ -71,7 +74,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
 
         if (_fromClasspath)
         {
-          URL url = this.getClass().getResource(fullPath);
+          URL url = _clazz.getResource(fullPath);
           if (url == null)
           {
             return null;

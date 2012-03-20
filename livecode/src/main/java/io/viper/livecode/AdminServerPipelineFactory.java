@@ -48,7 +48,7 @@ public class AdminServerPipelineFactory implements ChannelPipelineFactory
 
     _adminHostname = String.format("%s:%d", localhostName, localhostAdminPort);
 
-    _staticFileProvider = StaticFileContentInfoProvider.create(_adminServerRoot);
+    _staticFileProvider = StaticFileContentInfoProvider.create(this.getClass(), _adminServerRoot);
   }
 
   @Override
