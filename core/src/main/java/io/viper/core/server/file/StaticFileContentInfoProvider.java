@@ -45,7 +45,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
     _rootPath = rootPath.endsWith("/") ? rootPath : rootPath + "/";
 
     _rootPath = _rootPath.replace(File.separatorChar, '/');
-    _metaFilePath = _rootPath + File.separatorChar + ".meta" + File.separatorChar;
+    _metaFilePath = _rootPath + ".meta" + File.separatorChar;
   }
 
   @Override
@@ -56,6 +56,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
 
     try
     {
+      path = path.startsWith("/") ? path.substring(1) : path;
       final String fullPath = _rootPath + path;
 
       if (fullPath.endsWith("/"))
