@@ -20,6 +20,8 @@ public class InsertOnlyFileContentInfoCache implements FileContentInfoProvider
   {
     FileContentInfo contentInfo;
 
+    if (path == null) return null;
+
     if (_fileCache.containsKey(path))
     {
       contentInfo = _fileCache.get(path);

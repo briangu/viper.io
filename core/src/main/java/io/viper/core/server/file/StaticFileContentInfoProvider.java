@@ -51,6 +51,8 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   @Override
   public FileContentInfo getFileContent(String path)
   {
+    if (path == null) return null;
+
     FileChannel fc = null;
     FileContentInfo result = null;
 
