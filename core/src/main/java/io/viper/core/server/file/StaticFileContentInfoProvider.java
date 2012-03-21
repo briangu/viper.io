@@ -35,10 +35,10 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
   {
     _clazz = clazz;
 
-    _fromClasspath = rootPath.startsWith("classpath://");
+    _fromClasspath = rootPath.startsWith("res://");
     if (_fromClasspath)
     {
-      rootPath = rootPath.replace("classpath://", "");
+      rootPath = rootPath.replace("res://", "");
     }
 
     _rootPath = rootPath.endsWith("/") ? rootPath : rootPath + "/";
