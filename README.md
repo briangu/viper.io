@@ -15,44 +15,43 @@ The following shows how two domains can be hosted on port 80.
 The first, static.com, is a static content site that is hosted from embedded jar resources.
 The second, rest.com, is a service with REST handlers.  This service can easily be expanded to support both static and REST by extending StaticFileServer and adding the REST resources.
 
-
-package nest.router
-
-
-import _root_.io.viper.core.server.router._
-import io.viper.common.{NestServer, RestServer, StaticFileServer}
-import java.util.Map
-import org.json.JSONObject
+    package nest.router
 
 
-object Main {
-  def main(args: Array[String]) {
-    val handler = new HostRouterHandler
+    import _root_.io.viper.core.server.router._
+    import io.viper.common.{NestServer, RestServer, StaticFileServer}
+    import java.util.Map
+    import org.json.JSONObject
 
-    // Serve static.com from cached jar resources in the static.com directory
-    handler.putRoute("static.com", new StaticFileServer("res:///static.com/"))
 
-    // Serve REST handlers
-    handler.putRoute("rest.com", new RestServer {
-      def addRoutes {
+    object Main {
+      def main(args: Array[String]) {
+        val handler = new HostRouterHandler
 
-        get("/hello", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
-        })
+        // Serve static.com from cached jar resources in the static.com directory
+        handler.putRoute("static.com", new StaticFileServer("res:///static.com/"))
 
-        get("/world", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
-            val json = new JSONObject()
-            json.put("hello", "world")
-            new JsonResponse(json)
+        // Serve REST handlers
+        handler.putRoute("rest.com", new RestServer {
+          def addRoutes {
+
+            get("/hello", new RouteHandler {
+              def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
+            })
+
+            get("/world", new RouteHandler {
+              def exec(args: Map[String, String]): RouteResponse = {
+                val json = new JSONObject()
+                json.put("hello", "world")
+                new JsonResponse(json)
+              }
+            })
           }
         })
-      }
-    })
 
-    NestServer.run(handler)
-  }
-}
+        NestServer.run(handler)
+      }
+    }
 
 ### Maven
 
