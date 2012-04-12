@@ -7,6 +7,7 @@ Viper.io is an http powertool written on top of Netty.  It's designed to simplif
 * read-only websites (splash or product pages)
 * REST application development (e.g., client-side templates that consume JSON)
 * Uploading files directly to S3 using Netty
+* Dynamic thumbnail generation from images
 
 Example
 -------
