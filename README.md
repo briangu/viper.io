@@ -15,6 +15,7 @@ The following shows how two domains can be hosted on port 80:
 * The first, static.com, is a static content site that is hosted from embedded jar resources.
 * The second, rest.com, is a service with REST handlers.  This service can easily be expanded to support both static and REST by extending StaticFileServer and adding the REST resources.
 
+
     package nest.router
 
 
