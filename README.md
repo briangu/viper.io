@@ -1,11 +1,11 @@
 viper.io
 ========
 
-Viper.io is an http powertool written on top of Netty.  It's designed to simplify
+Viper.io is an http powertool written on top of Netty.  It's designed to simplify:
 
-virtual hosting (host multiple domains from the same process)
-read-only websites (splash or product pages)
-REST application development (e.g., client-side templates that consume JSON)
+* virtual hosting (host multiple domains from the same process)
+* read-only websites (splash or product pages)
+* REST application development (e.g., client-side templates that consume JSON)
 
 Example
 -------
