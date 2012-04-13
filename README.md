@@ -34,6 +34,37 @@ Hello World:
       }
     }
 
+File Server with thumbnail generation:
+
+    package io.viper.examples.files
+
+
+    import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentInfoProvider, HttpChunkProxyHandler, FileChunkProxy}
+    import io.viper.common.{StaticFileContentInfoProviderFactory, ViperServer, NestServer}
+
+
+    object FileServer {
+      def main(args: Array[String]) {
+        NestServer.run(9080, new FileServer("/tmp/uploads", "localhost"))
+      }
+    }
+
+    class FileServer(uploadFileRoot: String, downloadHostname: String) extends ViperServer("res:///fileserver") {
+      override def addRoutes {
+        val proxy = new FileChunkProxy(uploadFileRoot)
+        val relayListener = new FileUploadChunkRelayEventListener(downloadHostname)
+        addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener))
+
+        // add an on-demand thumbnail generation: it would be better to do this on file-add
+        val thumbFileProvider = ThumbnailFileContentInfoProvider.create(uploadFileRoot, 640, 480)
+        get("/thumb/$path", new StaticFileServerHandler(thumbFileProvider))
+
+        val provider = StaticFileContentInfoProviderFactory.create(this.getClass, uploadFileRoot)
+        get("/d/$path", new StaticFileServerHandler(provider))
+      }
+    }
+
+
 
 The following shows how two domains can be hosted on port 80. The first, static.com, is a static content site that is hosted from embedded jar resources. The second, rest.com, is a service with REST handlers.  This service can easily be expanded to support both static and REST by extending StaticFileServer and adding the REST resources.
 
