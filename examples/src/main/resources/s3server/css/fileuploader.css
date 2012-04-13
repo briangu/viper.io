@@ -25,7 +25,7 @@
 
 .qq-upload-file {}
 .qq-upload-url {font-size:11px;}
-.qq-upload-spinner {display:inline-block; background: url("images/loading.gif"); width:15px; height:15px; vertical-align:text-bottom;}
+.qq-upload-spinner {display:inline-block; background: url("/images/loading.gif"); width:15px; height:15px; vertical-align:text-bottom;}
 .qq-upload-size,.qq-upload-cancel {font-size:11px;}
 
 .qq-upload-failed-text {display:none;}

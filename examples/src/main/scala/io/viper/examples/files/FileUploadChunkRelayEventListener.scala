@@ -28,7 +28,7 @@ class FileUploadChunkRelayEventListener(hostname: String) extends HttpChunkRelay
       jsonResponse.put("success", success)
       if (success) {
         jsonResponse.put("thumbnail", String.format("%s/thumb/%s", hostname, fileKey))
-        jsonResponse.put("url", String.format("%s/d/%s", hostname, fileKey))
+        jsonResponse.put("url", String.format("/d/%s", fileKey))
         jsonResponse.put("key", fileKey)
       }
 

@@ -498,6 +498,7 @@ qq.FileUploader = function(o){
                 '<span class="qq-upload-file"></span>' +
                 '<span class="qq-upload-spinner"></span>' +
                 '<span class="qq-upload-size"></span>' +
+                '<span class="qq-upload-url"></span>' +
                 '<a class="qq-upload-cancel" href="#">Cancel</a>' +
                 '<span class="qq-upload-failed-text">Failed</span>' +
             '</li>',        
@@ -512,7 +513,7 @@ qq.FileUploader = function(o){
             file: 'qq-upload-file',
             spinner: 'qq-upload-spinner',
             size: 'qq-upload-size',
-	        url: 'qq-upload-url',
+            url: 'qq-upload-url',
             cancel: 'qq-upload-cancel',
 
             // added to list item when upload completes
