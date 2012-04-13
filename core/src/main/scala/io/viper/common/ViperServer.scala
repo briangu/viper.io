@@ -8,18 +8,20 @@ import io.viper.core.server.router._
 import java.util.Map
 
 
-class StaticFileServer(resourcePath: String) extends ChannelPipelineFactory
+class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
 {
-  def getPipeline: ChannelPipeline =
+  override def getPipeline: ChannelPipeline =
   {
     import scala.collection.JavaConverters._
-    val routes = addRoutes
+    val routes = addDefaultRoutes
     val lhPipeline: ChannelPipeline = new DefaultChannelPipeline
     lhPipeline.addLast("uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
     return lhPipeline
   }
 
-  protected def addRoutes: ArrayBuffer[Route] =
+  override def addRoutes = {}
+
+  private def addDefaultRoutes: ArrayBuffer[Route] =
   {
     val routes = ArrayBuffer[Route]()
     routes.append(new GetRoute("/hello", new RouteHandler

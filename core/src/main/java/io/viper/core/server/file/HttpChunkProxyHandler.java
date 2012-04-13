@@ -27,6 +27,15 @@ public class HttpChunkProxyHandler extends Route
   private final HttpChunkRelayProxy _chunkRelayProxy;
   private final HttpChunkRelayEventListener _relayListener;
 
+  final static private int MAX_CONTENT_LENGTH = 1024 * 1024 * 1024;
+
+  public HttpChunkProxyHandler(
+    String route,
+    HttpChunkRelayProxy chunkRelayProxy,
+    HttpChunkRelayEventListener relayListener) {
+    this(route, chunkRelayProxy, relayListener, MAX_CONTENT_LENGTH);
+  }
+
   public HttpChunkProxyHandler(
     String route,
     HttpChunkRelayProxy chunkRelayProxy,

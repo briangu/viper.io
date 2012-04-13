@@ -3,12 +3,15 @@ package io.viper.core.server.file.s3;
 
 import com.amazon.s3.QueryStringAuthGenerator;
 import com.amazon.s3.S3Object;
+import com.amazon.s3.Utils;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -20,6 +23,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
@@ -36,7 +40,6 @@ import io.viper.core.server.file.HttpChunkRelayProxy;
 
 public class S3StandardChunkProxy implements HttpChunkRelayProxy
 {
-
   private final QueryStringAuthGenerator _s3AuthGenerator;
   private final String _bucketName;
   private String _bucketKey;
@@ -59,6 +62,15 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
 
   private State _state = State.closed;
   private volatile HttpChunkProxyEventListener _listener;
+
+  public S3StandardChunkProxy(String awsId, String awsKey, String bucketName)
+    throws URISyntaxException
+  {
+    this(new QueryStringAuthGenerator(awsId, awsKey),
+         bucketName,
+         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()),
+         new URI(Utils.DEFAULT_HOST));
+  }
 
   public S3StandardChunkProxy(QueryStringAuthGenerator s3AuthGenerator,
                               String bucketName,

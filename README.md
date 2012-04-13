@@ -12,6 +12,29 @@ Viper.io is an http powertool written on top of Netty.  It's designed to simplif
 Example
 -------
 
+Hello World:
+
+    package io.viper.examples
+
+
+    import _root_.io.viper.core.server.router._
+    import io.viper.common.{NestServer, RestServer}
+    import java.util.Map
+
+
+    object Main {
+      def main(args: Array[String]) {
+        NestServer.run(8080, new RestServer {
+          def addRoutes {
+            get("/hello", new RouteHandler {
+              def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
+            })
+          }
+        })
+      }
+    }
+
+
 The following shows how two domains can be hosted on port 80. The first, static.com, is a static content site that is hosted from embedded jar resources. The second, rest.com, is a service with REST handlers.  This service can easily be expanded to support both static and REST by extending StaticFileServer and adding the REST resources.
 
 
