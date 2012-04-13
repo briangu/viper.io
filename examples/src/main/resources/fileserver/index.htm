@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link href="fileuploader.css" rel="stylesheet" type="text/css">	
+    <style>    	
+		body {font-size:13px; font-family:arial, sans-serif; width:700px; margin:100px auto;}
+    </style>	
+</head>
+<body>		
+    <h2>Welcome to ScaleThink File Drop!</h2>
+    
+	<h3>To upload a file, Drag-and-drop (supported in FF, Chrome), otherwise click the button.</h3>
+	
+	<div id="uploader-area">		
+		<noscript>			
+			<p>Please enable JavaScript to use file uploader.</p>
+		</noscript>         
+	</div>
+    
+    <script src="fileuploader.js" type="text/javascript"></script>
+    <script>        
+        function createUploader(){            
+            var uploader = new qq.FileUploader({
+                element: document.getElementById('uploader-area'),
+                action: '/app-filedrop/api/upload'
+            });           
+        }
+        
+        window.onload = createUploader;     
+    </script>    
+</body>
+</html>
