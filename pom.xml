@@ -41,7 +41,6 @@
   <modules>
     <module>core</module>
     <module>examples</module>
-    <module>livecode</module>
   </modules>
 
   <build>
