@@ -1,8 +1,9 @@
 package io.viper.examples.files
 
 
-import io.viper.core.server.file.{HttpChunkProxyHandler, FileChunkProxy}
 import io.viper.common.{ViperServer, NestServer}
+import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentInfoProvider, HttpChunkProxyHandler, FileChunkProxy}
+
 
 object Main {
   def main(args: Array[String]) {
@@ -15,5 +16,9 @@ class FileServer(uploadFileRoot: String, downloadHostname: String) extends Viper
     val proxy = new FileChunkProxy(uploadFileRoot);
     val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);
     addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener));
+
+    // add an on-demand thumbnail generation: it would be better to do this on file-add
+    val thumbFileProvider = ThumbnailFileContentInfoProvider.create(uploadFileRoot, 640, 480);
+    get("/thumb/$path", new StaticFileServerHandler(thumbFileProvider));
   }
 }
