@@ -7,11 +7,11 @@ import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentI
 
 object FileServer {
   def main(args: Array[String]) {
-    NestServer.run(8080, new FileServer("/tmp/uploads", "localhost"))
+    NestServer.run(9080, new FileServer("/tmp/uploads", "localhost"))
   }
 }
 
-class FileServer(uploadFileRoot: String, downloadHostname: String) extends ViperServer("res://fileserver") {
+class FileServer(uploadFileRoot: String, downloadHostname: String) extends ViperServer("res:///fileserver") {
   override def addRoutes {
     val proxy = new FileChunkProxy(uploadFileRoot);
     val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);

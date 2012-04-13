@@ -2,21 +2,26 @@ package io.viper.common
 
 
 import io.viper.core.server.file.StaticFileServerHandler
-import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
+import org.jboss.netty.channel.{DefaultChannelPipeline, ChannelPipeline, ChannelPipelineFactory}
+import org.jboss.netty.handler.codec.http.{HttpResponseEncoder, HttpRequestDecoder}
+import io.viper.core.server.router.RouterMatcherUpstreamHandler
 
 
 class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
 {
   override def getPipeline: ChannelPipeline = {
+    routes.clear
+    addRoutes
     addDefaultRoutes
-    super.getPipeline
+    buildPipeline
   }
 
   override def addRoutes = {}
 
   private def addDefaultRoutes {
     val provider = StaticFileContentInfoProviderFactory.create(this.getClass, resourcePath)
-    get("/$path", new StaticFileServerHandler(provider))
-    get("/", new StaticFileServerHandler(provider))
+    val handler = new StaticFileServerHandler(provider)
+    get("/$path", handler)
+    get("/", handler)
   }
 }

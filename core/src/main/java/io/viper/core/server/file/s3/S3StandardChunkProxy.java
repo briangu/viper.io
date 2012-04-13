@@ -86,6 +86,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   private void connect()
   {
     ClientBootstrap cb = new ClientBootstrap(_cf);
+    // TODO: do we need encoder/decoder?
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
     cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_listener));

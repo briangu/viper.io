@@ -4,41 +4,34 @@ package io.viper.common
 import org.jboss.netty.channel.{DefaultChannelPipeline, ChannelPipeline, ChannelPipelineFactory}
 import collection.mutable.ArrayBuffer
 import io.viper.core.server.router._
+import org.jboss.netty.handler.codec.http.{HttpResponseEncoder, HttpRequestDecoder}
 
 
 trait RestServer extends ChannelPipelineFactory
 {
-  val routes = new ArrayBuffer[Route]
+  val routes: ArrayBuffer[Route] = new ArrayBuffer[Route]
 
-  def getPipeline: ChannelPipeline =
-  {
+  def getPipeline: ChannelPipeline = {
+    routes.clear
+    addRoutes
+    buildPipeline
+  }
+
+  protected def buildPipeline: ChannelPipeline = {
     import scala.collection.JavaConverters._
-    val lhPipeline: ChannelPipeline = new DefaultChannelPipeline
+    val lhPipeline = new DefaultChannelPipeline
+    lhPipeline.addLast("decoder", new HttpRequestDecoder)
+    lhPipeline.addLast("encoder", new HttpResponseEncoder)
     lhPipeline.addLast("uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
-    return lhPipeline
+    lhPipeline
   }
 
   def addRoute(route: Route) = routes.append(route)
 
-  def get(route: String, handler: RouteHandler)
-  {
-    addRoute(new GetRoute(route, handler))
-  }
-
-  def put(route: String, handler: RouteHandler)
-  {
-    addRoute(new PutRoute(route, handler))
-  }
-
-  def post(route: String, handler: RouteHandler)
-  {
-    addRoute(new PostRoute(route, handler))
-  }
-
-  def delete(route: String, handler: RouteHandler)
-  {
-    addRoute(new DeleteRoute(route, handler))
-  }
+  def get(route: String, handler: RouteHandler) = addRoute(new GetRoute(route, handler))
+  def put(route: String, handler: RouteHandler) = addRoute(new PutRoute(route, handler))
+  def post(route: String, handler: RouteHandler) = addRoute(new PostRoute(route, handler))
+  def delete(route: String, handler: RouteHandler) = addRoute(new DeleteRoute(route, handler))
 
   def addRoutes
 }

@@ -8,7 +8,7 @@ import java.util.Map
 
 object HelloWorld {
   def main(args: Array[String]) {
-    NestServer.run(8080, new RestServer {
+    NestServer.run(9080, new RestServer {
       def addRoutes {
         get("/hello", new RouteHandler {
           def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")

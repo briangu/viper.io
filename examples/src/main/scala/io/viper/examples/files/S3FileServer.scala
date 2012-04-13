@@ -13,7 +13,7 @@ object S3FileServer {
   }
 }
 
-class S3FileServer(awsId: String, awsKey: String, awsBucket: String, downloadHostname: String) extends ViperServer("res://s3server") {
+class S3FileServer(awsId: String, awsKey: String, awsBucket: String, downloadHostname: String) extends ViperServer("res:///s3server") {
   override def addRoutes {
     val proxy = new S3StandardChunkProxy(awsId, awsKey, awsBucket);
     val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);

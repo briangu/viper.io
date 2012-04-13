@@ -6,7 +6,7 @@ import io.viper.core.server.file.{FileContentInfoProvider, InsertOnlyFileContent
 
 object StaticFileContentInfoProviderFactory
 {
-  var _enableCache = true;
+  var _enableCache = false;
 
   def enableCache(flag: Boolean) = _enableCache = flag
 
