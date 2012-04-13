@@ -7,7 +7,7 @@ import io.viper.common.{ViperServer, NestServer}
 import io.viper.core.server.file.s3.S3StandardChunkProxy
 
 
-object Main {
+object S3FileServer {
   def main(args: Array[String]) {
     NestServer.run(8080, new S3FileServer("awsid", "awskey", "awsBucket", "localhost"))
   }

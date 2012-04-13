@@ -6,7 +6,7 @@ import io.viper.common.{NestServer, RestServer}
 import java.util.Map
 
 
-object Main {
+object HelloWorld {
   def main(args: Array[String]) {
     NestServer.run(8080, new RestServer {
       def addRoutes {

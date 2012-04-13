@@ -5,7 +5,7 @@ import io.viper.common.{ViperServer, NestServer}
 import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentInfoProvider, HttpChunkProxyHandler, FileChunkProxy}
 
 
-object Main {
+object FileServer {
   def main(args: Array[String]) {
     NestServer.run(8080, new FileServer("/tmp/uploads", "localhost"))
   }

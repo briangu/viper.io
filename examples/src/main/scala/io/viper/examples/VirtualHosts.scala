@@ -7,7 +7,7 @@ import java.util.Map
 import org.json.JSONObject
 
 
-object Main {
+object VirtualHosts {
   def main(args: Array[String]) {
     val handler = new HostRouterHandler
 

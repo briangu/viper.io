@@ -7,7 +7,7 @@ import java.util.Map
 import org.json.JSONObject
 
 
-object Main {
+object Arguments {
   def main(args: Array[String]) {
     NestServer.run(8080, new RestServer {
       def addRoutes {
