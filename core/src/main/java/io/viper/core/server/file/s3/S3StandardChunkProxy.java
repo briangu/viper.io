@@ -48,7 +48,8 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
   private long _objectSize;
 
   private final ClientSocketChannelFactory _cf;
-  private final URI _amazonHost;
+  private final String _amazonHost;
+  private final int _amazonPort;
   private volatile Channel _s3Channel;
 
   private enum State
@@ -69,18 +70,21 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     this(new QueryStringAuthGenerator(awsId, awsKey),
          bucketName,
          new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()),
-         new URI(Utils.DEFAULT_HOST));
+         Utils.DEFAULT_HOST,
+         Utils.INSECURE_PORT);
   }
 
   public S3StandardChunkProxy(QueryStringAuthGenerator s3AuthGenerator,
                               String bucketName,
                               ClientSocketChannelFactory cf,
-                              URI amazonHost)
+                              String amazonHost,
+                              int amazonPort)
   {
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
     _cf = cf;
     _amazonHost = amazonHost;
+    _amazonPort = amazonPort;
   }
 
   private void connect()
@@ -90,7 +94,7 @@ public class S3StandardChunkProxy implements HttpChunkRelayProxy
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
     cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_listener));
-    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost.getHost(), _amazonHost.getPort()));
+    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost, _amazonPort));
 
     _s3Channel = f.getChannel();
     f.addListener(new ChannelFutureListener()

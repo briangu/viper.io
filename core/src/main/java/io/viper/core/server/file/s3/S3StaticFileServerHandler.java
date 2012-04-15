@@ -2,13 +2,18 @@ package io.viper.core.server.file.s3;
 
 
 import com.amazon.s3.QueryStringAuthGenerator;
+import com.amazon.s3.Utils;
 import io.viper.core.server.Util;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+
+import io.viper.core.server.router.Route;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -20,6 +25,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
@@ -42,13 +48,14 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
-public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
+public class S3StaticFileServerHandler extends Route
 {
   private final QueryStringAuthGenerator _s3AuthGenerator;
   private final String _bucketName;
 
   private final ClientSocketChannelFactory _cf;
-  private final URI _amazonHost;
+  private final String _amazonHost;
+  private final int _amazonPort;
   private Channel _s3Channel;
 
   private HttpRequest _request;
@@ -68,17 +75,33 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
   private static File _indexFile = null;
 
   // TODO: add support for index.htm
+  public S3StaticFileServerHandler(String route, String awsId, String awsKey, String bucketName)
+    throws URISyntaxException
+  {
+    this(
+      route,
+      new QueryStringAuthGenerator(awsId, awsKey),
+      bucketName,
+      new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()),
+      Utils.DEFAULT_HOST,
+      Utils.INSECURE_PORT);
+  }
 
   public S3StaticFileServerHandler(
+    String route,
     QueryStringAuthGenerator s3AuthGenerator,
     String bucketName,
     ClientSocketChannelFactory cf,
-    URI amazonHost)
+    String amazonHost,
+    int amazonPort)
   {
+    super(route);
+
     _s3AuthGenerator = s3AuthGenerator;
     _bucketName = bucketName;
     _cf = cf;
     _amazonHost = amazonHost;
+    _amazonPort = amazonPort;
   }
 
   private void connect(final ChannelHandlerContext ctx)
@@ -87,7 +110,7 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
     cb.getPipeline().addLast("encoder", new HttpRequestEncoder());
     cb.getPipeline().addLast("decoder", new HttpResponseDecoder());
     cb.getPipeline().addLast("handler", new S3ResponseHandler(_destChannel));
-    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost.getHost(), _amazonHost.getPort()));
+    ChannelFuture f = cb.connect(new InetSocketAddress(_amazonHost, _amazonPort));
 
     _s3Channel = f.getChannel();
     f.addListener(new ChannelFutureListener()
@@ -207,7 +230,6 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
 
   private class S3ResponseHandler extends SimpleChannelUpstreamHandler
   {
-
     private Channel _destChannel;
 
     S3ResponseHandler(Channel destChannel)
@@ -260,7 +282,11 @@ public class S3StaticFileServerHandler extends SimpleChannelUpstreamHandler
         }
         else
         {
-          sendError(_destChannel, INTERNAL_SERVER_ERROR);
+          HttpResponseStatus status =
+            (m.getStatus().equals(HttpResponseStatus.NOT_FOUND))
+              ? m.getStatus()
+              : INTERNAL_SERVER_ERROR;
+          sendError(_destChannel, status);
           closeS3Channel();
         }
       }

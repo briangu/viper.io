@@ -10,7 +10,10 @@ import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpVersion, Defa
 
 /**
  * Demonstrate basic REST resource CRUD operations using arguments
- * Would be cooler if the CRUD set was auto-generated
+ *
+ * TODO: Would be cooler if the CRUD set was auto-generated
+ *       argument extraction could be cleaner and with stronger typing
+ *
  */
 object Arguments {
 
