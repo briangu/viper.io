@@ -3,11 +3,11 @@ viper.io
 
 Viper.io is an http powertool written on top of Netty.  It's designed to simplify:
 
-* virtual hosting (host multiple domains from the same process)
-* read-only websites (splash or product pages)
+* Uploading and downloading of files directly to/from S3 using Netty
+* Read-only websites (splash or product pages)
 * REST application development (e.g., client-side templates that consume JSON)
-* Uploading files directly to S3 using Netty
 * Dynamic thumbnail generation from images
+* Virtual hosting (host multiple domains from the same process)
 
 Example
 -------
