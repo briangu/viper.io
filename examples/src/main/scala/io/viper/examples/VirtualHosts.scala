@@ -25,7 +25,7 @@ object VirtualHosts {
         get("/echo/$something", new RouteHandler {
           def exec(args: Map[String, String]): RouteResponse = {
             val json = new JSONObject()
-            json.put("response", args.get("$something"))
+            json.put("response", args.get("something"))
             new JsonResponse(json)
           }
         })
