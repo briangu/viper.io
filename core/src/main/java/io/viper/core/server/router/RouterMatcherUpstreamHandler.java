@@ -2,12 +2,7 @@ package io.viper.core.server.router;
 
 
 import io.viper.core.server.StatusResponseHandler;
-import org.jboss.netty.channel.ChannelEvent;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 
 import java.util.ArrayList;

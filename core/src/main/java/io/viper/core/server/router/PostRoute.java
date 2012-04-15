@@ -1,11 +1,11 @@
 package io.viper.core.server.router;
 
-import java.net.URI;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
 import org.json.JSONObject;
 
+import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;

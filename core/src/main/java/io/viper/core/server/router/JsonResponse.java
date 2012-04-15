@@ -1,14 +1,11 @@
 package io.viper.core.server.router;
 
 
-import java.io.UnsupportedEncodingException;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.HttpVersion;
+import org.jboss.netty.handler.codec.http.*;
 import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
 
 
 public class JsonResponse extends RouteResponse

@@ -2,14 +2,13 @@ package io.viper.core.server.router;
 
 
 import io.viper.core.server.StatusResponseHandler;
-
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class HostRouterHandler extends SimpleChannelUpstreamHandler implements ChannelPipelineFactory

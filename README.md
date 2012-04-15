@@ -34,6 +34,20 @@ Hello World:
       }
     }
 
+
+Static content served from embedded resources:
+
+    package io.viper.examples
+
+    import io.viper.common.{NestServer, ViperServer}
+
+    object StaticHost {
+      def main(args: Array[String]) {
+        NestServer.run(8080, new ViperServer("res:///static.com/"))
+      }
+    }
+
+
 File Server with thumbnail generation:
 
     package io.viper.examples.files

@@ -1,15 +1,12 @@
 package io.viper.core.server.router;
 
 
+import org.jboss.netty.channel.*;
+import org.jboss.netty.handler.codec.http.*;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import org.jboss.netty.channel.ChannelEvent;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.handler.codec.http.*;
 
 import static org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
