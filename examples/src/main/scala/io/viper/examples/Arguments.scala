@@ -67,6 +67,8 @@ object Arguments {
     })
   }
 
+  // TODO: we should fail with a 400 if we don't have the args we need
+  //       the platform should take care of validating this
   def getParams(args: Map[String, String]) : (String, String) = {
     if (!args.containsKey("key")) throw new RuntimeException("missing param: key")
     if (!args.containsKey("value")) throw new RuntimeException("missing param: value")
