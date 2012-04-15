@@ -23,7 +23,6 @@ class S3FileServer(awsId: String, awsKey: String, awsBucket: String, downloadHos
     val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);
     addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener));
 
-    // TODO: add caching layer
     addRoute(new S3StaticFileServerHandler("/d/$path", awsId, awsKey, awsBucket))
   }
 }

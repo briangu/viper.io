@@ -105,10 +105,7 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
         else
         {
           file = new File(fullPath);
-        }
 
-        if (file != null && file.exists())
-        {
           File metaFile = new File(_metaFilePath + path);
           if (metaFile.exists())
           {
@@ -124,12 +121,12 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
               meta.put(key, jsonObject.getString(key));
             }
           }
-          else
-          {
-            meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
-            meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(file.length()));
-          }
+        }
 
+        if (file != null && file.exists())
+        {
+          meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
+          meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(file.length()));
           result = FileContentInfo.create(file, meta);
         }
       }
