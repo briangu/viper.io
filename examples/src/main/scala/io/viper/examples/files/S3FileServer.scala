@@ -2,8 +2,8 @@ package io.viper.examples.files
 
 
 
-import io.viper.common.{StaticFileContentInfoProviderFactory, ViperServer, NestServer}
-import io.viper.core.server.file.{StaticFileServerHandler, HttpChunkProxyHandler}
+import io.viper.common.{ViperServer, NestServer}
+import io.viper.core.server.file.HttpChunkProxyHandler
 import io.viper.core.server.file.s3.{S3StaticFileServerHandler, S3StandardChunkProxy}
 
 

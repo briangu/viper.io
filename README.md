@@ -48,10 +48,39 @@ Static content served from embedded resources:
     }
 
 
-File Server with thumbnail generation:
+Serve files directly to/from S3:
 
     package io.viper.examples.files
 
+    import io.viper.common.{ViperServer, NestServer}
+    import io.viper.core.server.file.HttpChunkProxyHandler
+    import io.viper.core.server.file.s3.{S3StaticFileServerHandler, S3StandardChunkProxy}
+
+
+    object S3FileServer {
+      def main(args: Array[String]) {
+        var awsId = if (args.length > 2) args(0) else "awsId"
+        var awsKey = if (args.length > 2) args(1) else "awsKey"
+        var awsBucket = if (args.length > 2) args(2) else "awsBucket"
+
+        NestServer.run(8080, new S3FileServer(awsId, awsKey, awsBucket, "localhost"))
+      }
+    }
+
+    class S3FileServer(awsId: String, awsKey: String, awsBucket: String, downloadHostname: String) extends ViperServer("res:///s3server") {
+      override def addRoutes {
+        val proxy = new S3StandardChunkProxy(awsId, awsKey, awsBucket);
+        val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);
+        addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener));
+
+        addRoute(new S3StaticFileServerHandler("/d/$path", awsId, awsKey, awsBucket))
+      }
+    }
+
+
+File Server with thumbnail generation:
+
+    package io.viper.examples.files
 
     import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentInfoProvider, HttpChunkProxyHandler, FileChunkProxy}
     import io.viper.common.{StaticFileContentInfoProviderFactory, ViperServer, NestServer}
@@ -85,7 +114,6 @@ The following shows how two domains can be hosted on port 80. The first, static.
 
     package nest.router
 
-
     import _root_.io.viper.core.server.router._
     import io.viper.common.{NestServer, RestServer, StaticFileServer}
     import java.util.Map
@@ -107,10 +135,10 @@ The following shows how two domains can be hosted on port 80. The first, static.
               def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
             })
 
-            get("/world", new RouteHandler {
+            get("/echo/$something", new RouteHandler {
               def exec(args: Map[String, String]): RouteResponse = {
                 val json = new JSONObject()
-                json.put("hello", "world")
+                json.put("hello", args.get("something"))
                 new JsonResponse(json)
               }
             })
