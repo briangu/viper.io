@@ -125,8 +125,12 @@ public class StaticFileContentInfoProvider implements FileContentInfoProvider
 
         if (file != null && file.exists())
         {
-          meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
-          meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(file.length()));
+          if (!meta.containsKey(HttpHeaders.Names.CONTENT_TYPE)) {
+            meta.put(HttpHeaders.Names.CONTENT_TYPE, Util.getContentType(path));
+          }
+          if (!meta.containsKey(HttpHeaders.Names.CONTENT_LENGTH)) {
+            meta.put(HttpHeaders.Names.CONTENT_LENGTH, Long.toString(file.length()));
+          }
           result = FileContentInfo.create(file, meta);
         }
       }
