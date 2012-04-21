@@ -20,9 +20,9 @@ trait RestServer extends ChannelPipelineFactory
   protected def buildPipeline: ChannelPipeline = {
     import scala.collection.JavaConverters._
     val lhPipeline = new DefaultChannelPipeline
-    lhPipeline.addLast("decoder", new HttpRequestDecoder)
-    lhPipeline.addLast("encoder", new HttpResponseEncoder)
-    lhPipeline.addLast("uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
+    lhPipeline.addLast("rest-decoder", new HttpRequestDecoder)
+    lhPipeline.addLast("rest-encoder", new HttpResponseEncoder)
+    lhPipeline.addLast("rest-uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
     lhPipeline
   }
 
