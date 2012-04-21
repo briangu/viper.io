@@ -8,6 +8,8 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 
+import java.net.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -28,7 +30,74 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler implements C
 
   public void putRoute(String host, ChannelPipelineFactory pipelineFactory) throws Exception
   {
-    _routeFactories.put(host, pipelineFactory);
+    putRoute(host, 80, pipelineFactory);
+  }
+
+  public void putRoute(String host, int port, ChannelPipelineFactory pipelineFactory) throws Exception
+  {
+    if (host.equals("localhost"))
+    {
+      Set<String> aliases = getLocalHostAliases();
+      for (String alias : aliases)
+      {
+        _routeFactories.put(String.format("%s:%d", alias, port), pipelineFactory);
+      }
+    }
+    _routeFactories.put(String.format("%s:%d", host, port), pipelineFactory);
+  }
+
+  private Set<String> getLocalHostAliases()
+  {
+    Set<String> aliases = new HashSet<String>();
+
+    try
+    {
+      Enumeration<NetworkInterface> netInterfaces = NetworkInterface.getNetworkInterfaces();
+
+      while(netInterfaces.hasMoreElements()) {
+        NetworkInterface ni = netInterfaces.nextElement();
+
+        Enumeration<InetAddress> ipIter = ni.getInetAddresses();
+        while(ipIter.hasMoreElements())
+        {
+          InetAddress ip = ipIter.nextElement();
+          if (ip instanceof Inet4Address)
+          {
+            byte[] ipAddr = ip.getAddress();
+            aliases.add(String.format("%d.%d.%d.%d",
+              (short)(ipAddr[0] & 0xFF),
+              (short)(ipAddr[1] & 0xFF),
+              (short)(ipAddr[2] & 0xFF),
+              (short)(ipAddr[3] & 0xFF)));
+
+            String hostname = ip.getHostName();
+            if (hostname != null)
+            {
+              aliases.add(hostname);
+            }
+          }
+        }
+      }
+    }
+    catch (SocketException e)
+    {
+    }
+
+/*
+    try {
+      InetAddress[] addrs = InetAddress.getAllByName("localhost");
+      for(InetAddress addr: addrs)
+      {
+        byte[] ipAddr = addr.getAddress();
+        aliases.add(String.format("%d:%d:%d:%d", ipAddr[0], ipAddr[1], ipAddr[2], ipAddr[3]));
+        String hostname = addr.getHostName();
+        aliases.add(hostname);
+      }
+    } catch (UnknownHostException e) {
+    }
+*/
+
+    return aliases;
   }
 
   public void removeRoute(String host)
