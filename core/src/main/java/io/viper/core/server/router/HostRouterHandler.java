@@ -83,20 +83,6 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler implements C
     {
     }
 
-/*
-    try {
-      InetAddress[] addrs = InetAddress.getAllByName("localhost");
-      for(InetAddress addr: addrs)
-      {
-        byte[] ipAddr = addr.getAddress();
-        aliases.add(String.format("%d:%d:%d:%d", ipAddr[0], ipAddr[1], ipAddr[2], ipAddr[3]));
-        String hostname = addr.getHostName();
-        aliases.add(hostname);
-      }
-    } catch (UnknownHostException e) {
-    }
-*/
-
     return aliases;
   }
 
