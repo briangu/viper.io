@@ -43,6 +43,7 @@ public class HostRouterHandler extends SimpleChannelUpstreamHandler implements C
         _routeFactories.put(String.format("%s:%d", alias, port), pipelineFactory);
       }
     }
+    if (port == 80) _routeFactories.put(host, pipelineFactory);
     _routeFactories.put(String.format("%s:%d", host, port), pipelineFactory);
   }
 
