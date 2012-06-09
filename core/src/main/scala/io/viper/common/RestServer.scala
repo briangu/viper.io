@@ -4,12 +4,14 @@ package io.viper.common
 import org.jboss.netty.channel.{DefaultChannelPipeline, ChannelPipeline, ChannelPipelineFactory}
 import collection.mutable.ArrayBuffer
 import io.viper.core.server.router._
-import org.jboss.netty.handler.codec.http.{HttpResponseEncoder, HttpRequestDecoder}
+import org.jboss.netty.handler.codec.http.{HttpChunkAggregator, HttpResponseEncoder, HttpRequestDecoder}
 
 
 trait RestServer extends ChannelPipelineFactory
 {
   val routes: ArrayBuffer[Route] = new ArrayBuffer[Route]
+
+  val MAX_CONTENT_LENGTH = 1024*1024*1024
 
   def getPipeline: ChannelPipeline = {
     routes.clear
@@ -22,6 +24,7 @@ trait RestServer extends ChannelPipelineFactory
     val lhPipeline = new DefaultChannelPipeline
     lhPipeline.addLast("rest-decoder", new HttpRequestDecoder)
     lhPipeline.addLast("rest-encoder", new HttpResponseEncoder)
+    lhPipeline.addLast("rest-chunker", new HttpChunkAggregator(MAX_CONTENT_LENGTH))
     lhPipeline.addLast("rest-uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
     lhPipeline
   }
