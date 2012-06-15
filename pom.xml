@@ -3,7 +3,7 @@
 
   <groupId>io.viper</groupId>
   <artifactId>io.viper</artifactId>
-  <version>1</version>
+  <version>2-SNAPSHOT</version>
   <name>io.viper</name>
   <packaging>pom</packaging>
   <description>A netty based HTTP server and toolkit.</description>
