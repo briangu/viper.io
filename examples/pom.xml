@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.viper</groupId>
   <artifactId>io.viper.examples</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.1</version>
   <name>io.viper.examples</name>
   <packaging>jar</packaging>
   <description>viper.io examples</description>
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>io.viper</groupId>
       <artifactId>io.viper.core</artifactId>
-      <version>0.1.1-SNAPSHOT</version>
+      <version>0.1.1</version>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
