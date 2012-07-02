@@ -6,6 +6,8 @@ import org.jboss.netty.handler.codec.http.*;
 import org.json.JSONObject;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +56,19 @@ public class PostRoute extends RestRoute {
       return;
     }
 
-    String rawContent = new String(content.array(), "UTF-8");
+    byte[] body = content.array();
+    String contentLengthHeader = request.getHeader(HttpHeaders.Names.CONTENT_LENGTH);
+
+    int contentLength =
+      contentLengthHeader != null
+      ? Integer.parseInt(request.getHeader(HttpHeaders.Names.CONTENT_LENGTH))
+      : body.length;
+
+    if (contentLength != body.length) {
+      body = Arrays.copyOfRange(body, 0, contentLength);
+    }
+
+    String rawContent = new String(body, "UTF-8");
 
     if (rawContent.startsWith("{"))
     {
@@ -72,11 +86,23 @@ public class PostRoute extends RestRoute {
       args.putAll(RouteUtil.extractQueryParams(rawContent));
     }
 
+    HttpResponse response;
+    final RouteResponse[] routeResponse = new RouteResponse[1];
+
     try
     {
-      final RouteResponse routeResponse = _handler.exec(args);
-      HttpResponse response = routeResponse.HttpResponse;
+      routeResponse[0] = _handler.exec(args);
+      response = routeResponse[0].HttpResponse;
+    }
+    catch (Exception ex)
+    {
+      ex.printStackTrace();
+      routeResponse[0] = null;
+      response = new StatusResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR).HttpResponse;
+    }
 
+    try
+    {
       if (response == null)
       {
         response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -95,7 +121,7 @@ public class PostRoute extends RestRoute {
         public void operationComplete(ChannelFuture channelFuture)
           throws Exception
         {
-          routeResponse.dispose();
+        if (routeResponse[0] != null) routeResponse[0].dispose();
         }
       });
 
