@@ -144,7 +144,9 @@ public class HttpChunkProxyHandler extends Route
             public void onProxyWriteReady()
             {
               _chunkRelayProxy.writeChunk(singleChunk);
-              destChannel.setReadable(true);
+              if (destChannel.isOpen()) {
+                destChannel.setReadable(true);
+              }
             }
 
             @Override

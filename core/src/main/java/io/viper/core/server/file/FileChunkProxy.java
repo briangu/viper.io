@@ -97,7 +97,7 @@ public class FileChunkProxy implements HttpChunkRelayProxy
           File meta = new File(_metaFilePath + _objectName);
           RandomAccessFile metaRaf = new RandomAccessFile(meta, "rw");
           JSONObject jsonObject = new JSONObject(_objectMeta);
-          metaRaf.writeUTF(jsonObject.toString(2));
+          metaRaf.writeUTF(jsonObject.toString());
           metaRaf.close();
         }
 
