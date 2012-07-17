@@ -66,9 +66,11 @@ public class HttpChunkProxyHandler extends Route
       e.getChannel().setReadable(false);
 
       long contentLength =
-        m.containsHeader("Content-Length")
-          ? contentLength = Long.parseLong(m.getHeader("Content-Length"))
-          : -1;
+        m.containsHeader("X-File-Size")
+          ? Long.parseLong(m.getHeader("X-File-Size"))
+          : m.containsHeader(HttpHeaders.Names.CONTENT_LENGTH)
+            ? Long.parseLong(m.getHeader(HttpHeaders.Names.CONTENT_LENGTH))
+            : -1;
 
       String filename = m.containsHeader("X-File-Name") ? m.getHeader("X-File-Name") : null;
       String contentType = Util.getContentType(filename);
@@ -77,6 +79,7 @@ public class HttpChunkProxyHandler extends Route
       if (filename != null) meta.put("filename", filename);
       meta.put(HttpHeaders.Names.CONTENT_TYPE, contentType);
       final String fileKey = _relayListener.onStart(meta);
+      meta.put(HttpHeaders.Names.CONTENT_LENGTH, String.valueOf(contentLength));
 
       if (m.isChunked())
       {
