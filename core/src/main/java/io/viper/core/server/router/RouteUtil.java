@@ -60,6 +60,7 @@ public class RouteUtil
   public static boolean match(List<String> route, List<String> path)
   {
     if (path.size() < route.size()) return false;
+    if (path.size() > route.size() && route.size() == 0) return false;
     if ((path.size() > route.size()) && (!route.get(route.size()-1).startsWith("$"))) return false;
 
     for (int i = 0; i < route.size(); i++)
