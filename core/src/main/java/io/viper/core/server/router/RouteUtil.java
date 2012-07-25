@@ -1,12 +1,16 @@
 package io.viper.core.server.router;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RouteUtil
 {
@@ -73,6 +77,51 @@ public class RouteUtil
     return true;
   }
 
+
+  public static Map<String, String> extractArgs(HttpRequest request, List<String> route, List<String> path)
+    throws URISyntaxException, UnsupportedEncodingException, JSONException
+  {
+    Map<String, String> args = RouteUtil.extractPathArgs(route, path);
+    args.putAll(RouteUtil.extractQueryParams(new URI(request.getUri())));
+
+    ChannelBuffer content = request.getContent();
+    if (!content.hasArray())
+    {
+      return null;
+    }
+
+    byte[] body = content.array();
+    String contentLengthHeader = request.getHeader(HttpHeaders.Names.CONTENT_LENGTH);
+
+    int contentLength =
+      contentLengthHeader != null
+        ? Integer.parseInt(request.getHeader(HttpHeaders.Names.CONTENT_LENGTH))
+        : body.length;
+
+    if (contentLength != body.length) {
+      body = Arrays.copyOfRange(body, 0, contentLength);
+    }
+
+    String rawContent = new String(body, "UTF-8");
+
+    if (rawContent.startsWith("{"))
+    {
+      JSONObject json = new JSONObject(rawContent);
+
+      Iterator keys = json.keys();
+      while(keys.hasNext())
+      {
+        String key = keys.next().toString();
+        args.put(key, json.getString(key));
+      }
+    }
+    else
+    {
+      args.putAll(RouteUtil.extractQueryParams(rawContent));
+    }
+
+    return args;
+  }
 
   public static Map<String, String> extractPathArgs(List<String> route, List<String> path)
   {
