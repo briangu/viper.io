@@ -68,6 +68,7 @@ public class StaticFileServerHandler implements RouteHandler
     if (contentInfo != null)
     {
       response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentInfo.meta.get(Names.CONTENT_TYPE));
+      response.setHeader(HttpHeaders.Names.EXPIRES, "Expires: Thu, 29 Oct 2020 17:04:19 GMT");
       response.setContent(contentInfo.content);
 
       return new RouteResponse(response, new RouteResponse.RouteResponseDispose(){
