@@ -43,6 +43,16 @@ object NestServer
     Thread.currentThread.join
   }
 
+  def run(localhostPort: Int)(f:(RestServer) => Unit) {
+    val handler = new RestServer {
+      def addRoutes {
+        f(this)
+      }
+    }
+    create(MAX_CONTENT_LENGTH, localhostPort, handler)
+    Thread.currentThread.join
+  }
+
   def shutdown {
     _allChannels.close.awaitUninterruptibly()
   }

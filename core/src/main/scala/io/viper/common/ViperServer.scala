@@ -2,9 +2,7 @@ package io.viper.common
 
 
 import io.viper.core.server.file.StaticFileServerHandler
-import org.jboss.netty.channel.{DefaultChannelPipeline, ChannelPipeline, ChannelPipelineFactory}
-import org.jboss.netty.handler.codec.http.{HttpResponseEncoder, HttpRequestDecoder}
-import io.viper.core.server.router.RouterMatcherUpstreamHandler
+import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
 
 
 class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer

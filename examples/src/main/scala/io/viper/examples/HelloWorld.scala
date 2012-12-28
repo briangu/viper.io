@@ -1,19 +1,10 @@
 package io.viper.examples
 
+import io.viper.common.{RestServer, NestServer}
+import io.viper.core.server.router.Utf8Response
+import RestServer._
 
-import _root_.io.viper.core.server.router._
-import io.viper.common.{NestServer, RestServer}
-import java.util.Map
 
-
-object HelloWorld {
-  def main(args: Array[String]) {
-    NestServer.run(9080, new RestServer {
-      def addRoutes {
-        get("/hello", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
-        })
-      }
-    })
-  }
+object HelloWorld extends App {
+  NestServer.run(9080) { server => get(server, "/hello") { args => new Utf8Response("world") } }
 }
