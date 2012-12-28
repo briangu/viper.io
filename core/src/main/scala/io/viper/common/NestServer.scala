@@ -7,6 +7,9 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.group.{DefaultChannelGroup, ChannelGroup}
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.channel.ChannelPipelineFactory
+import io.viper.core.server.router._
+import java.util
+import collection.immutable
 
 
 object NestServer
@@ -58,4 +61,62 @@ object NestServer
   }
 }
 
+class NestServer(val port: Int = 80) extends DelayedInit {
+  import NestServer._
+
+  protected def args: Array[String] = _args
+  protected def server: RestServer = _server
+
+  private var _server: RestServer = _
+  private var _args: Array[String] = _
+
+  override def delayedInit(body: => Unit) {
+    //initCode += (() => body)
+    _server = new RestServer {
+      def addRoutes {
+        body
+      }
+    }
+  }
+
+  def get(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    immutable.List() map {idx => idx}
+    server.addRoute(new GetRoute(route, handler))
+  }
+  def put(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new PutRoute(route, handler))
+  }
+  def post(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new PostRoute(route, handler))
+  }
+  def delete(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new DeleteRoute(route, handler))
+  }
+
+
+  /** The main method.
+    *  This stores all argument so that they can be retrieved with `args`
+    *  and the executes all initialization code segments in the order they were
+    *  passed to `delayedInit`
+    *  @param args the arguments passed to the main method
+    */
+  def main(args: Array[String]) {
+    this._args = args
+
+    create(MAX_CONTENT_LENGTH, port, server)
+    Thread.currentThread.join()
+  }
+}
 

@@ -7,20 +7,6 @@ import io.viper.core.server.router._
 import org.jboss.netty.handler.codec.http.{HttpChunkAggregator, HttpResponseEncoder, HttpRequestDecoder}
 import java.util
 
-object RestServer {
-  def get(server: RestServer, route: String, handler: RouteHandler) {
-    server.addRoute(new GetRoute(route, handler))
-  }
-
-  def get(server: RestServer, route: String)(f:(util.Map[String, String]) => RouteResponse) {
-    val handler = new RouteHandler {
-      def exec(args: util.Map[String, String]) = f(args)
-    }
-    server.addRoute(new GetRoute(route, handler))
-  }
-}
-
-
 trait RestServer extends ChannelPipelineFactory
 {
   val routes: ArrayBuffer[Route] = new ArrayBuffer[Route]
