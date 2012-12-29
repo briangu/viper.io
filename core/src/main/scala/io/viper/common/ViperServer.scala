@@ -5,18 +5,18 @@ import io.viper.core.server.file.StaticFileServerHandler
 import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
 
 
-class ViperServer(resourcePath: String = "") extends ChannelPipelineFactory with RestServer
+class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
 {
   override def getPipeline: ChannelPipeline = {
-    routes.clear
+    routes.clear()
     addRoutes
-    addDefaultRoutes
+    addDefaultRoutes()
     buildPipeline
   }
 
-  override def addRoutes = {}
+  override def addRoutes {}
 
-  private def addDefaultRoutes {
+  private def addDefaultRoutes() {
     val provider = StaticFileContentInfoProviderFactory.create(this.getClass, resourcePath)
     val handler = new StaticFileServerHandler(provider)
     get("/$path", handler)
@@ -24,6 +24,4 @@ class ViperServer(resourcePath: String = "") extends ChannelPipelineFactory with
   }
 }
 
-case class VirtualServer(hostname: String, resourcePath: String = "") extends ViperServer(resourcePath) {
-
-}
+class VirtualServer(val hostname: String, resourcePath: String = "") extends ViperServer(resourcePath) {}
