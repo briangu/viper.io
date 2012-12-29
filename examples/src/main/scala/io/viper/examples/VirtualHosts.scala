@@ -14,12 +14,11 @@ object VirtualHosts extends MultiHostServer(8080) {
   route(VirtualServer("bar.com", "res:///foo.com"))
 
   // Serve REST handlers
-  route("rest.com", { server =>
-    server.get("/hello") { args => Response("world") }
-    server.get("/echo/$something") { args =>
+  route("rest.com")
+    .get("/hello", { args => Response("world") })
+    .get("/echo/$something", { args =>
       val json = new JSONObject()
       json.put("response", args.get("something"))
       Response(json)
-    }
-  })
+    })
 }

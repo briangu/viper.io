@@ -136,11 +136,11 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
     body
   }
 
-  def route(hostname: String, resourcePath: String) {
-    _server.putRoute(hostname, port, new ViperServer(resourcePath))
+  def route(hostname: String, resourcePath: String): VirtualServer = {
+    route(new VirtualServer(hostname, resourcePath))
   }
 
-  def route(hostname: String) {
+  def route(hostname: String): VirtualServer = {
     route(hostname, "res:///%s".format(hostname))
   }
 
@@ -158,8 +158,9 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
     route(hostname, "res:///%s".format(hostname), f)
   }
 
-  def route(server: VirtualServer) {
-    _server.putRoute(server.hostname, port, server)
+  def route(virtualServer: VirtualServer): VirtualServer = {
+    server.putRoute(virtualServer.hostname, port, virtualServer)
+    virtualServer
   }
 
   def main(args: Array[String]) {

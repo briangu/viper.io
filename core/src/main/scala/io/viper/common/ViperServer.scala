@@ -3,6 +3,9 @@ package io.viper.common
 
 import io.viper.core.server.file.StaticFileServerHandler
 import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
+import java.util
+import io.viper.core.server.router.RouteResponse
+import collection.mutable.ListBuffer
 
 
 class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
@@ -32,5 +35,18 @@ object VirtualServer {
 class VirtualServer(val hostname: String, resourcePath: String) extends ViperServer(resourcePath) {
   def this(hostname: String) {
     this(hostname, "res:///%s".format(hostname))
+  }
+
+  private val initCode = new ListBuffer[() => Unit]
+
+  override def addRoutes {
+    for (proc <- initCode) proc()
+  }
+
+  def get(route: String, f:(util.Map[String, String]) => RouteResponse): VirtualServer = {
+    initCode.append(() => {
+      super.get(route)(f)
+    })
+    this
   }
 }
