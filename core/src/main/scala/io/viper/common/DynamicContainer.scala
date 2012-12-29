@@ -1,18 +1,12 @@
-package io.viper.examples
+package io.viper.common
 
-import org.clapper.classutil.{ClassFinder, ClassInfo}
 import collection.mutable.ListBuffer
-import io.viper.examples.FileWalker.FileHandler
 import java.io.File
 import collection.mutable
-import io.viper.common.{Response, VirtualServer, MultiHostServer}
+import org.clapper.classutil.{ClassFinder, ClassInfo}
+import io.viper.common.FileWalker.FileHandler
 
-// curl -H 'Host: helloworld.com:8080' http://localhost:8080/hello
-class DynamicHelloWorld extends VirtualServer("helloworld.com") {
-  get("/hello", { args => Response("world") })
-}
-
-object DynamicContainer extends MultiHostServer(8080) {
+class DynamicContainer(port: Int = 80) extends MultiHostServer(8080) {
   DynamicLoader.load(".").map(_.name).foreach { name =>
     route(Class.forName(name).newInstance().asInstanceOf[VirtualServer])
   }

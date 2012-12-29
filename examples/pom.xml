@@ -52,11 +52,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.clapper</groupId>
-      <artifactId>classutil_2.9.2</artifactId>
-      <version>0.4.6</version>
-    </dependency>
-    <dependency>
       <groupId>io.viper</groupId>
       <artifactId>io.viper.core</artifactId>
       <version>0.1.2-SNAPSHOT</version>
