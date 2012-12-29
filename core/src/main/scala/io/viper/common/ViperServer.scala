@@ -7,7 +7,6 @@ import java.util
 import io.viper.core.server.router.RouteResponse
 import collection.mutable.ListBuffer
 
-
 class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
 {
   override def getPipeline: ChannelPipeline = {
