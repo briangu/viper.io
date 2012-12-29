@@ -24,4 +24,13 @@ class ViperServer(resourcePath: String) extends ChannelPipelineFactory with Rest
   }
 }
 
-class VirtualServer(val hostname: String, resourcePath: String = "") extends ViperServer(resourcePath) {}
+object VirtualServer {
+  def apply(hostname: String): VirtualServer = new VirtualServer(hostname)
+  def apply(hostname: String, resourcePath: String) = new VirtualServer(hostname, resourcePath)
+}
+
+class VirtualServer(val hostname: String, resourcePath: String) extends ViperServer(resourcePath) {
+  def this(hostname: String) {
+    this(hostname, "res:///%s".format(hostname))
+  }
+}
