@@ -1,9 +1,8 @@
 package io.viper.examples
 
-import io.viper.common.NestServer
-import io.viper.core.server.router.Utf8Response
+import io.viper.common.{Response, NestServer}
 
 
 object HelloWorld extends NestServer(9080) {
-  get("/hello") { args => new Utf8Response("world") }
+  get("/hello") { args => Response("world") }
 }

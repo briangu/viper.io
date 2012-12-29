@@ -10,6 +10,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory
 import io.viper.core.server.router._
 import java.util
 import collection.immutable
+import collection.mutable.ListBuffer
 
 
 object NestServer
@@ -120,3 +121,57 @@ class NestServer(val port: Int = 80) extends DelayedInit {
   }
 }
 
+class StaticServer(resourcePath: String, port: Int = 80) extends App {
+  import NestServer._
+  create(MAX_CONTENT_LENGTH, port, new ViperServer(resourcePath))
+  Thread.currentThread.join()
+}
+
+class MultiHostServer(port: Int = 80) extends DelayedInit {
+  import NestServer._
+
+  protected def args: Array[String] = _args
+  protected def server: HostRouterHandler = _handler
+
+  private val _handler = new HostRouterHandler
+
+  private var _args: Array[String] = _
+  private val initCode = new ListBuffer[() => Unit]
+
+  override def delayedInit(body: => Unit) {
+    initCode += (() => body)
+  }
+
+  def route(hostname: String, resourcePath: String) {
+    _handler.putRoute(hostname, new ViperServer(resourcePath))
+  }
+
+  def route(hostname: String, server: ViperServer) {
+    _handler.putRoute(hostname, server)
+  }
+
+  def route(server: VirtualServer) {
+    _handler.putRoute(server.hostname, server)
+  }
+
+  def route(hostname: String) (f:(RestServer) => Unit) {
+    _handler.putRoute(hostname, new RestServer {
+      def addRoutes {
+        f(this)
+      }
+    })
+  }
+
+  /** The main method.
+    *  This stores all argument so that they can be retrieved with `args`
+    *  and the executes all initialization code segments in the order they were
+    *  passed to `delayedInit`
+    *  @param args the arguments passed to the main method
+    */
+  def main(args: Array[String]) {
+    this._args = args
+    for (proc <- initCode) proc()
+    create(MAX_CONTENT_LENGTH, port, server)
+    Thread.currentThread.join()
+  }
+}

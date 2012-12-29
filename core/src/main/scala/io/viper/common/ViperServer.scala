@@ -5,7 +5,7 @@ import io.viper.core.server.file.StaticFileServerHandler
 import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
 
 
-class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
+class ViperServer(resourcePath: String = "") extends ChannelPipelineFactory with RestServer
 {
   override def getPipeline: ChannelPipeline = {
     routes.clear
@@ -22,4 +22,8 @@ class ViperServer(resourcePath: String) extends ChannelPipelineFactory with Rest
     get("/$path", handler)
     get("/", handler)
   }
+}
+
+case class VirtualServer(hostname: String, resourcePath: String = "") extends ViperServer(resourcePath) {
+
 }

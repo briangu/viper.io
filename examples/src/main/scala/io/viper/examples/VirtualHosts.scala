@@ -1,37 +1,22 @@
 package io.viper.examples
 
 
-import _root_.io.viper.core.server.router._
-import io.viper.common.{NestServer, RestServer, ViperServer}
-import java.util.Map
+import io.viper.common._
 import org.json.JSONObject
 
 
-object VirtualHosts {
-  def main(args: Array[String]) {
-    val handler = new HostRouterHandler
+object VirtualHosts extends MultiHostServer(8080) {
 
-    // Serve static.com from cached jar resources in the static.com directory
-    handler.putRoute("static.com", new ViperServer("res:///static.com/"))
+  // Serve static.com from cached jar resources in the static.com directory
+  route("static.com", "res:///static.com/")
 
-    // Serve REST handlers
-    handler.putRoute("rest.com", new RestServer {
-      def addRoutes {
-
-        get("/hello", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
-        })
-
-        get("/echo/$something", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
-            val json = new JSONObject()
-            json.put("response", args.get("something"))
-            new JsonResponse(json)
-          }
-        })
-      }
-    })
-
-    NestServer.run(8080, handler)
-  }
+  // Serve REST handlers
+  route("rest.com", new ViperServer {
+    get("/hello") { args => Response("world") }
+    get("/echo/$something") { args =>
+      val json = new JSONObject()
+      json.put("response", args.get("something"))
+      Response(json)
+    }
+  })
 }
