@@ -5,10 +5,29 @@ import java.io.File
 import collection.mutable
 import org.clapper.classutil.{ClassFinder, ClassInfo}
 import io.viper.common.FileWalker.FileHandler
+import java.net.URLClassLoader
 
-class DynamicContainer(port: Int = 80) extends MultiHostServer(8080) {
-  DynamicLoader.load(".").map(_.name).foreach { name =>
+class DynamicContainerApp(port: Int = 80, path: String = ".") extends MultiHostServerApp(8080) {
+  DynamicLoader.load(path).map(_.name).foreach { name =>
     route(Class.forName(name).newInstance().asInstanceOf[VirtualServer])
+  }
+}
+
+class DynamicContainer(port: Int = 80, path: String = ".") extends MultiHostServer(port) {
+
+  def loadClass[T](jar: File, name: String): T = {
+    val child = new URLClassLoader(Array(jar.toURL()), this.getClass().getClassLoader())
+    Class.forName(name, true, child).newInstance.asInstanceOf[T]
+  }
+
+  override def run {
+    DynamicLoader.load(path).foreach { info =>
+      println("loading location: %s, name: %s".format(info.location, info.name))
+      val server = loadClass[VirtualServer](info.location, info.name)
+      println("adding: %s".format(server.hostname))
+      route(server)
+    }
+    super.run
   }
 }
 

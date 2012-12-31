@@ -128,9 +128,14 @@ class StaticServer(resourcePath: String, port: Int = 80) extends App {
 class MultiHostServer(port: Int = 80) extends DelayedInit {
   import NestServer._
 
+  def run() {
+    create(MAX_CONTENT_LENGTH, port, server)
+    Thread.currentThread.join()
+  }
+
   protected def server: HostRouterHandler = _server
 
-  private val _server = new HostRouterHandler
+  protected val _server = new HostRouterHandler
 
   override def delayedInit(body: => Unit) {
     body
@@ -162,9 +167,11 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
     server.putRoute(virtualServer.hostname, port, virtualServer)
     virtualServer
   }
+}
 
+class MultiHostServerApp(port: Int = 80) extends MultiHostServer(port) with DelayedInit {
   def main(args: Array[String]) {
-    create(MAX_CONTENT_LENGTH, port, server)
-    Thread.currentThread.join()
+    run
   }
 }
+

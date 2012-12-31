@@ -7,7 +7,7 @@ import java.util
 import io.viper.core.server.router._
 import collection.mutable.ListBuffer
 
-class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
+class ViperServer(resourcePath: String, instance: Any = null) extends ChannelPipelineFactory with RestServer
 {
   override def getPipeline: ChannelPipeline = {
     routes.clear()

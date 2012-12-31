@@ -13,7 +13,7 @@ object StaticFileContentInfoProviderFactory
   }
 
   def create(clazz: Class[_], resourcePath: String): FileContentInfoProvider = {
-    val rawFileProvider = StaticFileContentInfoProvider.create(this.getClass, resourcePath)
+    val rawFileProvider = StaticFileContentInfoProvider.create(clazz, resourcePath)
     if (_enableCache) new InsertOnlyFileContentInfoCache(rawFileProvider) else rawFileProvider
   }
 }
