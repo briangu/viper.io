@@ -33,7 +33,7 @@ object VirtualServer {
 
 class VirtualServer(val hostname: String, resourcePath: String) extends ViperServer(resourcePath) {
   def this(hostname: String) {
-    this(hostname, "res:///%s".format(hostname))
+    this(hostname, "res:///%s/".format(hostname))
   }
 
   private val initCode = new ListBuffer[() => Unit]
@@ -57,5 +57,16 @@ class VirtualServer(val hostname: String, resourcePath: String) extends ViperSer
   def delete(route: String, f:(util.Map[String, String]) => RouteResponse): VirtualServer = {
     initCode.append(() => { super.delete(route)(f) })
     this
+  }
+
+  def create: ViperServer = new ViperServer("./src/main/resources/%s/".format(hostname))
+
+  def main(args: Array[String]) {
+    val port = if (args.length > 0) args(0).toInt else 8080
+    val hostRouterHandler = new HostRouterHandler
+    if (port != 80) StaticFileContentInfoProviderFactory.enableCache(false)
+    hostRouterHandler.putRoute("localhost", port, create)
+    NestServer.create(port, hostRouterHandler)
+    Thread.currentThread.join
   }
 }
