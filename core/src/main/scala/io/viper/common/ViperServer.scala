@@ -7,8 +7,10 @@ import java.util
 import io.viper.core.server.router._
 import collection.mutable.ListBuffer
 
-class ViperServer(resourcePath: String, instance: Any = null) extends ChannelPipelineFactory with RestServer
+class ViperServer(resourcePath: String) extends ChannelPipelineFactory with RestServer
 {
+  var resourceInstance: Class[_]  = this.getClass
+
   override def getPipeline: ChannelPipeline = {
     routes.clear()
     addRoutes
@@ -19,7 +21,7 @@ class ViperServer(resourcePath: String, instance: Any = null) extends ChannelPip
   override def addRoutes {}
 
   private def addDefaultRoutes() {
-    val provider = StaticFileContentInfoProviderFactory.create(this.getClass, resourcePath)
+    val provider = StaticFileContentInfoProviderFactory.create(resourceInstance, resourcePath)
     val handler = new StaticFileServerHandler(provider)
     get("/$path", handler)
     get("/", handler)
@@ -31,7 +33,7 @@ object VirtualServer {
   def apply(hostname: String, resourcePath: String) = new VirtualServer(hostname, resourcePath)
 }
 
-class VirtualServer(val hostname: String, resourcePath: String) extends ViperServer(resourcePath) {
+class VirtualServer(val hostname: String, resourcePath: String) extends ViperServer(resourcePath) with VirtualServerRunner {
   def this(hostname: String) {
     this(hostname, "res:///%s/".format(hostname))
   }
@@ -59,8 +61,6 @@ class VirtualServer(val hostname: String, resourcePath: String) extends ViperSer
     this
   }
 
-  def create: ViperServer = new ViperServer("./src/main/resources/%s/".format(hostname))
-
   def main(args: Array[String]) {
     val port = if (args.length > 0) args(0).toInt else 8080
     val hostRouterHandler = new HostRouterHandler
@@ -69,4 +69,15 @@ class VirtualServer(val hostname: String, resourcePath: String) extends ViperSer
     NestServer.create(port, hostRouterHandler)
     Thread.currentThread.join
   }
+
+  def start {}
+  def stop {}
+  def create: ViperServer = new ViperServer(resourcePath)
+}
+
+trait VirtualServerRunner {
+  def hostname: String
+  def start
+  def stop
+  def create: ViperServer
 }

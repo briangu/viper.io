@@ -9,7 +9,9 @@ import java.net.URLClassLoader
 
 class DynamicContainerApp(port: Int = 80, path: String = ".") extends MultiHostServerApp(8080) {
   DynamicLoader.load(path).map(_.name).foreach { name =>
-    route(Class.forName(name).newInstance().asInstanceOf[VirtualServer])
+    val runner = Class.forName(name).newInstance().asInstanceOf[VirtualServerRunner]
+    runner.start
+    route(runner.hostname, runner.create)
   }
 }
 
@@ -23,9 +25,9 @@ class DynamicContainer(port: Int = 80, path: String = ".") extends MultiHostServ
   override def run {
     DynamicLoader.load(path).foreach { info =>
       println("loading location: %s, name: %s".format(info.location, info.name))
-      val server = loadClass[VirtualServer](info.location, info.name)
-      println("adding: %s".format(server.hostname))
-      route(server)
+      val runner = loadClass[VirtualServerRunner](info.location, info.name)
+      println("adding: %s".format(runner.hostname))
+      route(runner)
     }
     super.run
   }
@@ -47,7 +49,7 @@ object DynamicLoader {
   def load(jarFiles: List[File]): List[ClassInfo] = {
     val finder = ClassFinder(jarFiles)
     val classesMap = ClassFinder.classInfoMap(finder.getClasses())
-    val plugins = ClassFinder.concreteSubclasses("io.viper.common.VirtualServer", classesMap).toList
+    val plugins = ClassFinder.concreteSubclasses("io.viper.common.VirtualServerRunner", classesMap).toList
     val filtered = plugins.filter(_.name != "io.viper.common.VirtualServer")
     filtered.foreach(println(_))
     filtered

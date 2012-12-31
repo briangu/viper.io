@@ -10,6 +10,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory
 import io.viper.core.server.router._
 import java.util
 import collection.immutable
+import collection.mutable.ListBuffer
 
 
 object NestServer
@@ -128,9 +129,21 @@ class StaticServer(resourcePath: String, port: Int = 80) extends App {
 class MultiHostServer(port: Int = 80) extends DelayedInit {
   import NestServer._
 
+  val runners = new ListBuffer[VirtualServerRunner]
+
   def run() {
-    create(MAX_CONTENT_LENGTH, port, server)
-    Thread.currentThread.join()
+    try {
+      runners.foreach(_.start)
+      runners.foreach{ runner =>
+        val viperServer = runner.create
+        viperServer.resourceInstance = runner.getClass
+        route(runner.hostname, viperServer)
+      }
+      create(MAX_CONTENT_LENGTH, port, server)
+      Thread.currentThread.join()
+    } finally {
+      runners.foreach(_.stop)
+    }
   }
 
   protected def server: HostRouterHandler = _server
@@ -166,6 +179,10 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
   def route(virtualServer: VirtualServer): VirtualServer = {
     server.putRoute(virtualServer.hostname, port, virtualServer)
     virtualServer
+  }
+
+  def route(runner: VirtualServerRunner) {
+    runners.append(runner)
   }
 }
 

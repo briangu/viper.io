@@ -62,11 +62,13 @@
       <artifactId>classutil_2.9.2</artifactId>
       <version>0.4.6</version>
     </dependency>
+    <!--
     <dependency>
       <groupId>org.imgscalr</groupId>
       <artifactId>imgscalr-lib</artifactId>
       <version>4.2</version>
     </dependency>
+    -->
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
