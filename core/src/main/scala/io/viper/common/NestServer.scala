@@ -126,7 +126,7 @@ class StaticServer(resourcePath: String, port: Int = 80) extends App {
   Thread.currentThread.join()
 }
 
-class MultiHostServer(port: Int = 80) extends DelayedInit {
+class MultiHostServer(port: Int = 80) {
   import NestServer._
 
   val runners = new ListBuffer[VirtualServerRunner]
@@ -149,10 +149,6 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
   protected def server: HostRouterHandler = _server
 
   protected val _server = new HostRouterHandler
-
-  override def delayedInit(body: => Unit) {
-    body
-  }
 
   def route(hostname: String, resourcePath: String): VirtualServer = {
     route(new VirtualServer(hostname, resourcePath))
@@ -187,6 +183,10 @@ class MultiHostServer(port: Int = 80) extends DelayedInit {
 }
 
 class MultiHostServerApp(port: Int = 80) extends MultiHostServer(port) with DelayedInit {
+  override def delayedInit(body: => Unit) {
+    body
+  }
+
   def main(args: Array[String]) {
     run
   }
