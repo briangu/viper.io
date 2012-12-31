@@ -50,7 +50,10 @@ public class Util
 
     String contentType;
 
-    if (filename.endsWith(".js"))
+    if (filename.endsWith(".html") || filename.endsWith(".htm")) {
+      contentType = "text/html";
+    }
+    else if (filename.endsWith(".js"))
     {
       contentType = "text/javascript";
     }
