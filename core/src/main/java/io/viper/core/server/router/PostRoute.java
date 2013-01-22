@@ -5,6 +5,7 @@ import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
 import org.json.JSONObject;
 
+import java.lang.Boolean;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Arrays;
@@ -83,7 +84,9 @@ public class PostRoute extends RestRoute {
     }
     else
     {
-      args.putAll(RouteUtil.extractQueryParams(rawContent));
+      String contentType = request.getHeader("Content-Type");
+      Boolean utf8Decode = contentType.contains("utf8");
+      args.putAll(RouteUtil.extractQueryParams(rawContent, utf8Decode));
     }
 
     HttpResponse response;
