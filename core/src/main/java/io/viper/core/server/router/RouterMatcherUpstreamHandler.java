@@ -11,6 +11,8 @@ import java.util.List;
 
 public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
 {
+
+  private static final ChannelHandler HANDLER_401 = new StatusResponseHandler("Not authorized", 401);
   private static final ChannelHandler HANDLER_404 = new StatusResponseHandler("Not found", 404);
 
   private final String _handlerName;
@@ -38,18 +40,25 @@ public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
     HttpRequest request = (HttpRequest) ((MessageEvent) e).getMessage();
 
     boolean matchFound = false;
+    boolean isAuthorized = false;
 
     for (Route route : _routes)
     {
       if (!route.isMatch(request)) continue;
       setHandler(ctx.getPipeline(), route.getChannelHandler());
       matchFound = true;
+      if (!route.isAuthorized(request)) continue;
+      isAuthorized = true;
       break;
     }
 
     if (!matchFound)
     {
       setHandler(ctx.getPipeline(), HANDLER_404);
+    }
+    else if (!isAuthorized)
+    {
+      setHandler(ctx.getPipeline(), HANDLER_401);
     }
 
     super.handleUpstream(ctx, e);

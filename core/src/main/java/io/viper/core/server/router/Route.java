@@ -1,6 +1,7 @@
 package io.viper.core.server.router;
 
 
+import io.viper.core.server.security.AuthHandler;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
@@ -22,18 +23,27 @@ public abstract class Route extends SimpleChannelUpstreamHandler
 {
   protected String _rawRoute;
   protected List<String> _route;
+  protected AuthHandler _authHandler;
 
   protected Route(String route)
   {
-    _rawRoute = route;
-    _route = RouteUtil.parsePath(route);
+    this(route, null);
   }
 
-  public String getRoute() {
+  protected Route(String route, AuthHandler authHandler)
+  {
+    _rawRoute = route;
+    _route = RouteUtil.parsePath(route);
+    _authHandler = authHandler;
+  }
+
+  public String getRoute()
+  {
     return _rawRoute;
   }
 
-  public ChannelHandler getChannelHandler() {
+  public ChannelHandler getChannelHandler()
+  {
     return this;
   }
 
@@ -46,7 +56,7 @@ public abstract class Route extends SimpleChannelUpstreamHandler
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
-    throws Exception
+          throws Exception
   {
     Channel ch = e.getChannel();
     Throwable cause = e.getCause();
@@ -71,5 +81,10 @@ public abstract class Route extends SimpleChannelUpstreamHandler
 
     // Close the connection as soon as the error message is sent.
     ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+  }
+
+  public boolean isAuthorized(HttpRequest request)
+  {
+    return _authHandler == null || _authHandler.isAuthorized(request);
   }
 }

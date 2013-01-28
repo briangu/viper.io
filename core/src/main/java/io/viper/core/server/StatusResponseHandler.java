@@ -13,6 +13,7 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import java.nio.charset.Charset;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.WWW_AUTHENTICATE;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
