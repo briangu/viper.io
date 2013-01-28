@@ -1,6 +1,7 @@
 package io.viper.core.server.router;
 
 
+import io.viper.core.server.security.AuthHandler;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
 
@@ -22,7 +23,12 @@ public abstract class RestRoute extends Route
 
   protected RestRoute(String route, RouteHandler handler, HttpMethod method)
   {
-    super(route);
+    this(route, method, handler, null);
+  }
+
+  protected RestRoute(String route, HttpMethod method, RouteHandler handler, AuthHandler authHandler)
+  {
+    super(route, authHandler);
     _handler = handler;
     _method = method;
   }
@@ -53,7 +59,7 @@ public abstract class RestRoute extends Route
       final RouteResponse routeResponse = _handler.exec(args);
 
       final Boolean keepalive = isKeepAlive(request);
-      
+
       HttpResponse response = routeResponse.HttpResponse;
 
       if (response == null)
@@ -73,7 +79,7 @@ public abstract class RestRoute extends Route
           response.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
         }
       }
-      
+
       ChannelFuture writeFuture = e.getChannel().write(response);
       writeFuture.addListener(new ChannelFutureListener()
       {

@@ -22,7 +22,6 @@ class S3FileServer(awsId: String, awsKey: String, awsBucket: String, downloadHos
     val proxy = new S3StandardChunkProxy(awsId, awsKey, awsBucket);
     val relayListener = new FileUploadChunkRelayEventListener(downloadHostname);
     addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener));
-
     addRoute(new S3StaticFileServerHandler("/d/$path", awsId, awsKey, awsBucket))
   }
 }
