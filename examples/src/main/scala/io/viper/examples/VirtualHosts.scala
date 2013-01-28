@@ -1,37 +1,24 @@
 package io.viper.examples
 
 
-import _root_.io.viper.core.server.router._
-import io.viper.common.{NestServer, RestServer, ViperServer}
-import java.util.Map
+import io.viper.common._
 import org.json.JSONObject
 
+// curl -H 'Host: rest.com:8080' http://localhost:8080/hello
+object VirtualHosts extends MultiHostServer(8080) {
 
-object VirtualHosts {
-  def main(args: Array[String]) {
-    val handler = new HostRouterHandler
+  // Serve static.com from cached jar resources in the static.com directory
+  route("static.com") // uses res:///static.com by default
+  route("static2.com", "res://static.com")
+  route(VirtualServer("foo.com"))
+  route(VirtualServer("bar.com", "res:///foo.com"))
 
-    // Serve static.com from cached jar resources in the static.com directory
-    handler.putRoute("static.com", new ViperServer("res:///static.com/"))
-
-    // Serve REST handlers
-    handler.putRoute("rest.com", new RestServer {
-      def addRoutes {
-
-        get("/hello", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
-        })
-
-        get("/echo/$something", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
-            val json = new JSONObject()
-            json.put("response", args.get("something"))
-            new JsonResponse(json)
-          }
-        })
-      }
+  // Serve REST handlers
+  route("rest.com")
+    .get("/hello", { args => Response("world") })
+    .get("/echo/$something", { args =>
+      val json = new JSONObject()
+      json.put("response", args.get("something"))
+      Response(json)
     })
-
-    NestServer.run(8080, handler)
-  }
 }

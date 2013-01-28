@@ -14,24 +14,10 @@ Example
 
 Hello World:
 
-    package io.viper.examples
+    import io.viper.common.{Response, NestServer}
 
-
-    import _root_.io.viper.core.server.router._
-    import io.viper.common.{NestServer, RestServer}
-    import java.util.Map
-
-
-    object Main {
-      def main(args: Array[String]) {
-        NestServer.run(8080, new RestServer {
-          def addRoutes {
-            get("/hello", new RouteHandler {
-              def exec(args: Map[String, String]): RouteResponse = new Utf8Response("world")
-            })
-          }
-        })
-      }
+    object HelloWorld extends NestServer(9080) {
+      get("/hello") { args => Response("world") }
     }
 
 
@@ -78,11 +64,11 @@ Serve files directly to/from S3:
     }
 
 
-File Server with thumbnail generation:
+File Server:
 
     package io.viper.examples.files
 
-    import io.viper.core.server.file.{StaticFileServerHandler, ThumbnailFileContentInfoProvider, HttpChunkProxyHandler, FileChunkProxy}
+    import io.viper.core.server.file.{StaticFileServerHandler, HttpChunkProxyHandler, FileChunkProxy}
     import io.viper.common.{StaticFileContentInfoProviderFactory, ViperServer, NestServer}
 
 
@@ -97,11 +83,6 @@ File Server with thumbnail generation:
         val proxy = new FileChunkProxy(uploadFileRoot)
         val relayListener = new FileUploadChunkRelayEventListener(downloadHostname)
         addRoute(new HttpChunkProxyHandler("/u/", proxy, relayListener))
-
-        // add an on-demand thumbnail generation: it would be better to do this on file-add
-        val thumbFileProvider = ThumbnailFileContentInfoProvider.create(uploadFileRoot, 640, 480)
-        get("/thumb/$path", new StaticFileServerHandler(thumbFileProvider))
-
         val provider = StaticFileContentInfoProviderFactory.create(this.getClass, uploadFileRoot)
         get("/d/$path", new StaticFileServerHandler(provider))
       }

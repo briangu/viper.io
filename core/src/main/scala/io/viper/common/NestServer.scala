@@ -7,11 +7,15 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.group.{DefaultChannelGroup, ChannelGroup}
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.channel.ChannelPipelineFactory
+import io.viper.core.server.router._
+import java.util
+import collection.immutable
+import collection.mutable.ListBuffer
 
 
 object NestServer
 {
-  val MAX_CONTENT_LENGTH = 1024 * 1024 * 1024;
+  val MAX_CONTENT_LENGTH = 1024 * 1024 * 1024
 
   val _allChannels: ChannelGroup = new DefaultChannelGroup("server")
   var _virtualServers: ServerBootstrap = null
@@ -40,12 +44,151 @@ object NestServer
 
   def run(localhostPort: Int, handler: ChannelPipelineFactory) {
     create(MAX_CONTENT_LENGTH, localhostPort, handler)
-    Thread.currentThread.join
+    Thread.currentThread.join()
   }
 
-  def shutdown {
+  def run(localhostPort: Int)(f:(RestServer) => Unit) {
+    val handler = new RestServer {
+      def addRoutes {
+        f(this)
+      }
+    }
+    create(MAX_CONTENT_LENGTH, localhostPort, handler)
+    Thread.currentThread.join()
+  }
+
+  def shutdown() {
     _allChannels.close.awaitUninterruptibly()
   }
 }
 
+class NestServer(val port: Int = 80) extends DelayedInit {
+  import NestServer._
+
+  protected def args: Array[String] = _args
+  protected def server: RestServer = _server
+
+  private var _server: RestServer = _
+  private var _args: Array[String] = _
+
+  override def delayedInit(body: => Unit) {
+    _server = new RestServer {
+      def addRoutes {
+        body
+      }
+    }
+  }
+
+  def get(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    immutable.List() map {idx => idx}
+    server.addRoute(new GetRoute(route, handler))
+  }
+  def put(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new PutRoute(route, handler))
+  }
+  def post(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new PostRoute(route, handler))
+  }
+  def delete(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    server.addRoute(new DeleteRoute(route, handler))
+  }
+
+
+  /** The main method.
+    *  This stores all argument so that they can be retrieved with `args`
+    *  and the executes all initialization code segments in the order they were
+    *  passed to `delayedInit`
+    *  @param args the arguments passed to the main method
+    */
+  def main(args: Array[String]) {
+    this._args = args
+
+    create(MAX_CONTENT_LENGTH, port, server)
+    Thread.currentThread.join()
+  }
+}
+
+class StaticServer(resourcePath: String, port: Int = 80) extends App {
+  import NestServer._
+  create(MAX_CONTENT_LENGTH, port, new ViperServer(resourcePath))
+  Thread.currentThread.join()
+}
+
+class MultiHostServer(port: Int = 80) {
+  import NestServer._
+
+  val runners = new ListBuffer[VirtualServerRunner]
+
+  def run() {
+    try {
+      runners.foreach(_.start)
+      runners.foreach{ runner =>
+        val viperServer = runner.create
+        viperServer.resourceInstance = runner.getClass
+        route(runner.hostname, viperServer)
+      }
+      create(MAX_CONTENT_LENGTH, port, server)
+      Thread.currentThread.join()
+    } finally {
+      runners.foreach(_.stop)
+    }
+  }
+
+  protected def server: HostRouterHandler = _server
+
+  protected val _server = new HostRouterHandler
+
+  def route(hostname: String, resourcePath: String): VirtualServer = {
+    route(new VirtualServer(hostname, resourcePath))
+  }
+
+  def route(hostname: String): VirtualServer = {
+    route(hostname, "res:///%s".format(hostname))
+  }
+
+  def route(hostname: String, server: ViperServer) {
+    _server.putRoute(hostname, port, server)
+  }
+
+  def route(hostname: String, resourcePath: String, f:(RestServer) => Unit) {
+    _server.putRoute(hostname, port, new ViperServer(resourcePath) {
+      override def addRoutes { f(this) }
+    })
+  }
+
+  def route(hostname: String, f:(RestServer) => Unit) {
+    route(hostname, "res:///%s".format(hostname), f)
+  }
+
+  def route(virtualServer: VirtualServer): VirtualServer = {
+    server.putRoute(virtualServer.hostname, port, virtualServer)
+    virtualServer
+  }
+
+  def route(runner: VirtualServerRunner) {
+    runners.append(runner)
+  }
+}
+
+class MultiHostServerApp(port: Int = 80) extends MultiHostServer(port) with DelayedInit {
+  override def delayedInit(body: => Unit) {
+    body
+  }
+
+  def main(args: Array[String]) {
+    run
+  }
+}
 

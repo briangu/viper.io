@@ -45,6 +45,12 @@ public class RouteUtil
   public static Map<String, String> extractQueryParams(String queryString)
     throws UnsupportedEncodingException
   {
+    return extractQueryParams(queryString, true);
+  }
+
+  public static Map<String, String> extractQueryParams(String queryString, Boolean utf8Decode)
+    throws UnsupportedEncodingException
+  {
     Map<String, String> map = new HashMap<String, String>();
     
     if (queryString != null)
@@ -54,7 +60,8 @@ public class RouteUtil
       {
         String[] pair = part.split("=");
         if (pair.length != 2) continue;
-        map.put(pair[0], URLDecoder.decode(pair[1], "UTF-8"));
+        // TODO: we should only urldecode iff the incoming encoding calls for it
+        map.put(pair[0], utf8Decode ? URLDecoder.decode(pair[1], "UTF-8") : pair[1]);
       }
     }
 

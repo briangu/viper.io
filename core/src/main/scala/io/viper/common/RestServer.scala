@@ -5,8 +5,9 @@ import org.jboss.netty.channel.{DefaultChannelPipeline, ChannelPipeline, Channel
 import collection.mutable.ArrayBuffer
 import io.viper.core.server.router._
 import org.jboss.netty.handler.codec.http.{HttpChunkAggregator, HttpResponseEncoder, HttpRequestDecoder}
+import java.util
+import collection.immutable
 import io.viper.core.server.security.AuthHandler
-
 
 trait RestServer extends ChannelPipelineFactory
 {
@@ -36,6 +37,32 @@ trait RestServer extends ChannelPipelineFactory
   def put(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new PutRoute(route, handler, authHandler))
   def post(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new PostRoute(route, handler, authHandler))
   def delete(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new DeleteRoute(route, handler, authHandler))
+
+  def get(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    immutable.List() map {idx => idx}
+    addRoute(new GetRoute(route, handler))
+  }
+  def put(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    addRoute(new PutRoute(route, handler))
+  }
+  def post(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    addRoute(new PostRoute(route, handler))
+  }
+  def delete(route: String)(f:(util.Map[String, String]) => RouteResponse) {
+    val handler = new RouteHandler {
+      def exec(args: util.Map[String, String]) = f(args)
+    }
+    addRoute(new DeleteRoute(route, handler))
+  }
 
   def addRoutes
 }

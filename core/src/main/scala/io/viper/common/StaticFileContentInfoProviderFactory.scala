@@ -6,12 +6,14 @@ import io.viper.core.server.file.{FileContentInfoProvider, InsertOnlyFileContent
 
 object StaticFileContentInfoProviderFactory
 {
-  var _enableCache = true;
+  var _enableCache = true
 
-  def enableCache(flag: Boolean) = _enableCache = flag
+  def enableCache(flag: Boolean) {
+    _enableCache = flag
+  }
 
   def create(clazz: Class[_], resourcePath: String): FileContentInfoProvider = {
-    val rawFileProvider = StaticFileContentInfoProvider.create(this.getClass, resourcePath);
+    val rawFileProvider = StaticFileContentInfoProvider.create(clazz, resourcePath)
     if (_enableCache) new InsertOnlyFileContentInfoCache(rawFileProvider) else rawFileProvider
   }
 }
