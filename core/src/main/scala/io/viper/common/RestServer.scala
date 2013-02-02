@@ -7,6 +7,7 @@ import io.viper.core.server.router._
 import org.jboss.netty.handler.codec.http.{HttpChunkAggregator, HttpResponseEncoder, HttpRequestDecoder}
 import java.util
 import collection.immutable
+import io.viper.core.server.security.AuthHandler
 
 trait RestServer extends ChannelPipelineFactory
 {
@@ -32,10 +33,10 @@ trait RestServer extends ChannelPipelineFactory
 
   def addRoute(route: Route) = routes.append(route)
 
-  def get(route: String, handler: RouteHandler) = addRoute(new GetRoute(route, handler))
-  def put(route: String, handler: RouteHandler) = addRoute(new PutRoute(route, handler))
-  def post(route: String, handler: RouteHandler) = addRoute(new PostRoute(route, handler))
-  def delete(route: String, handler: RouteHandler) = addRoute(new DeleteRoute(route, handler))
+  def get(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new GetRoute(route, handler, authHandler))
+  def put(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new PutRoute(route, handler, authHandler))
+  def post(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new PostRoute(route, handler, authHandler))
+  def delete(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new DeleteRoute(route, handler, authHandler))
 
   def get(route: String)(f:(util.Map[String, String]) => RouteResponse) {
     val handler = new RouteHandler {

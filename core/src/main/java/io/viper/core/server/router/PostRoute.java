@@ -1,5 +1,6 @@
 package io.viper.core.server.router;
 
+import io.viper.core.server.security.AuthHandler;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
@@ -21,8 +22,14 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class PostRoute extends RestRoute {
 
-  public PostRoute(String route, RouteHandler handler) {
-    super(route, handler, HttpMethod.POST);
+  public PostRoute(String route, RouteHandler handler)
+  {
+    this(route, handler, null);
+  }
+
+  public PostRoute(String route, RouteHandler handler, AuthHandler authHandler)
+  {
+    super(route, HttpMethod.POST, handler, authHandler);
   }
 
   @Override
