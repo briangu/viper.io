@@ -31,7 +31,9 @@ trait RestServer extends ChannelPipelineFactory
     lhPipeline
   }
 
-  def addRoute(route: Route) = routes.append(route)
+  def addRoute(route: Route) = {
+    routes.append(route)
+  }
 
   def get(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new GetRoute(route, handler, authHandler))
   def put(route: String, handler: RouteHandler, authHandler: AuthHandler = null) = addRoute(new PutRoute(route, handler, authHandler))

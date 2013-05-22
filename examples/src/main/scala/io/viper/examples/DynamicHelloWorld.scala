@@ -7,4 +7,4 @@ class DynamicHelloWorld extends VirtualServer("helloworld.com") {
   get("/hello", { args => Response("world") })
 }
 
-object DynamicServer extends DynamicContainerApp(8080)
+object DynamicServer extends DynamicContainerApp(8080, ".")
