@@ -57,12 +57,12 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>org.clapper</groupId>
-            <artifactId>classutil_2.9.2</artifactId>
-            <version>0.4.6</version>
-        </dependency>
-        <!--
+      <dependency>
+        <groupId>org.clapper</groupId>
+        <artifactId>classutil_2.10</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+      <!--
         <dependency>
           <groupId>org.imgscalr</groupId>
           <artifactId>imgscalr-lib</artifactId>
