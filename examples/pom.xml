@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.viper</groupId>
     <artifactId>io.viper.examples</artifactId>
-    <version>0.1.4-SNAPSHOT</version>
+    <version>0.1.4</version>
     <name>io.viper.examples</name>
     <packaging>jar</packaging>
     <description>viper.io examples</description>
