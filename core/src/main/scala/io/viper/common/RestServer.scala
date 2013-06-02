@@ -13,7 +13,7 @@ trait RestServer extends ChannelPipelineFactory
 {
   val routes: ArrayBuffer[Route] = new ArrayBuffer[Route]
 
-  val MAX_CONTENT_LENGTH = 1024*1024*1024
+  def getMaxContentLength: Int = 1024*1024*1024
 
   def getPipeline: ChannelPipeline = {
     routes.clear
@@ -26,12 +26,12 @@ trait RestServer extends ChannelPipelineFactory
     val lhPipeline = new DefaultChannelPipeline
     lhPipeline.addLast("rest-decoder", new HttpRequestDecoder)
     lhPipeline.addLast("rest-encoder", new HttpResponseEncoder)
-    lhPipeline.addLast("rest-chunker", new HttpChunkAggregator(MAX_CONTENT_LENGTH))
+    lhPipeline.addLast("rest-chunker", new HttpChunkAggregator(getMaxContentLength))
     lhPipeline.addLast("rest-uri-router", new RouterMatcherUpstreamHandler("uri-handlers", routes.toList.asJava))
     lhPipeline
   }
 
-  def addRoute(route: Route) = {
+  def addRoute(route: Route) {
     routes.append(route)
   }
 

@@ -15,13 +15,13 @@ import collection.mutable.ListBuffer
 
 object NestServer
 {
-  val MAX_CONTENT_LENGTH = 1024 * 1024 * 1024
+  private val _allChannels: ChannelGroup = new DefaultChannelGroup("server")
+  private var _virtualServers: ServerBootstrap = null
 
-  val _allChannels: ChannelGroup = new DefaultChannelGroup("server")
-  var _virtualServers: ServerBootstrap = null
+  def getMaxContentLength = 1024 * 1024 * 1024
 
   def create(localhostPort: Int, handler: ChannelPipelineFactory) {
-    create(MAX_CONTENT_LENGTH, localhostPort, handler)
+    create(getMaxContentLength, localhostPort, handler)
   }
 
   def create(maxContentLength: Int, localhostPort: Int, handler: ChannelPipelineFactory) {
@@ -43,7 +43,7 @@ object NestServer
   }
 
   def run(localhostPort: Int, handler: ChannelPipelineFactory) {
-    create(MAX_CONTENT_LENGTH, localhostPort, handler)
+    create(getMaxContentLength, localhostPort, handler)
     Thread.currentThread.join()
   }
 
@@ -53,7 +53,7 @@ object NestServer
         f(this)
       }
     }
-    create(MAX_CONTENT_LENGTH, localhostPort, handler)
+    create(getMaxContentLength, localhostPort, handler)
     Thread.currentThread.join()
   }
 
@@ -115,14 +115,14 @@ class NestServer(val port: Int = 80) extends DelayedInit {
   def main(args: Array[String]) {
     this._args = args
 
-    create(MAX_CONTENT_LENGTH, port, server)
+    create(getMaxContentLength, port, server)
     Thread.currentThread.join()
   }
 }
 
 class StaticServer(resourcePath: String, port: Int = 80) extends App {
   import NestServer._
-  create(MAX_CONTENT_LENGTH, port, new ViperServer(resourcePath))
+  create(getMaxContentLength, port, new ViperServer(resourcePath))
   Thread.currentThread.join()
 }
 
@@ -139,7 +139,7 @@ class MultiHostServer(port: Int = 80) {
         viperServer.resourceInstance = runner.getClass
         route(runner.hostname, viperServer)
       }
-      create(MAX_CONTENT_LENGTH, port, server)
+      create(getMaxContentLength, port, server)
       Thread.currentThread.join()
     } finally {
       runners.foreach(_.stop)
@@ -188,7 +188,7 @@ class MultiHostServerApp(port: Int = 80) extends MultiHostServer(port) with Dela
   }
 
   def main(args: Array[String]) {
-    run
+    run()
   }
 }
 
