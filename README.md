@@ -9,6 +9,15 @@ Viper.io is an http powertool written on top of Netty.  It's designed to simplif
 * Dynamic thumbnail generation from images
 * Virtual hosting (host multiple domains from the same process)
 
+Mavin
+-----
+
+<dependency>
+  <groupId>io.viper</groupId>
+  <artifactId>io.viper.core</artifactId>
+  <version>0.1.4</version>
+</dependency>
+
 Example
 -------
 
@@ -133,7 +142,7 @@ The following shows how two domains can be hosted on port 80. The first, static.
 ### Maven
 
     <dependency>
-      <groupId>io.viper</groupId>
-      <artifactId>io.viper.core</artifactId>
-      <version>0.1.1-SNAPSHOT</version>
+        <groupId>io.viper</groupId>
+        <artifactId>io.viper.core</artifactId>
+        <version>0.1.4</version>
     </dependency>
