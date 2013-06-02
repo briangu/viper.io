@@ -9,14 +9,14 @@ Viper.io is an http powertool written on top of Netty.  It's designed to simplif
 * Dynamic thumbnail generation from images
 * Virtual hosting (host multiple domains from the same process)
 
-Mavin
+Maven
 -----
 
-<dependency>
-  <groupId>io.viper</groupId>
-  <artifactId>io.viper.core</artifactId>
-  <version>0.1.4</version>
-</dependency>
+    <dependency>
+      <groupId>io.viper</groupId>
+      <artifactId>io.viper.core</artifactId>
+      <version>0.1.4</version>
+    </dependency>
 
 Example
 -------
