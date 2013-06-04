@@ -12,13 +12,13 @@ class ViperServer(resourcePath: String) extends ChannelPipelineFactory with Rest
   var resourceInstance: Class[_]  = this.getClass
 
   override def getPipeline: ChannelPipeline = {
-    routes.clear()
-    addRoutes
+    routes = List[Route]()
+    addRoutes()
     addDefaultRoutes()
-    buildPipeline
+    buildPipeline()
   }
 
-  override def addRoutes {}
+  override def addRoutes() {}
 
   private def addDefaultRoutes() {
     val provider = StaticFileContentInfoProviderFactory.create(resourceInstance, resourcePath)
@@ -40,7 +40,7 @@ class VirtualServer(val hostname: String, resourcePath: String) extends ViperSer
 
   private val initCode = new ListBuffer[() => Unit]
 
-  override def addRoutes {
+  override def addRoutes() {
     for (proc <- initCode) proc()
   }
 
@@ -64,20 +64,20 @@ class VirtualServer(val hostname: String, resourcePath: String) extends ViperSer
   def main(args: Array[String]) {
     val port = if (args.length > 0) args(0).toInt else 8080
     val hostRouterHandler = new HostRouterHandler
-    if (port != 80) StaticFileContentInfoProviderFactory.enableCache(false)
+    if (port != 80) StaticFileContentInfoProviderFactory.enableCache(enabled = false)
     hostRouterHandler.putRoute("localhost", port, create)
     NestServer.create(port, hostRouterHandler)
-    Thread.currentThread.join
+    Thread.currentThread.join()
   }
 
-  def start {}
-  def stop {}
-  def create: ViperServer = new ViperServer(resourcePath)
+  def start() {}
+  def stop() {}
+  def create: ViperServer = this
 }
 
 trait VirtualServerRunner {
   def hostname: String
-  def start
-  def stop
+  def start()
+  def stop()
   def create: ViperServer
 }

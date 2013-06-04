@@ -22,8 +22,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -57,18 +57,11 @@
     </build>
 
     <dependencies>
-      <dependency>
-        <groupId>org.clapper</groupId>
-        <artifactId>classutil_2.10</artifactId>
-        <version>1.0.2</version>
-      </dependency>
-      <!--
         <dependency>
-          <groupId>org.imgscalr</groupId>
-          <artifactId>imgscalr-lib</artifactId>
-          <version>4.2</version>
+            <groupId>org.clapper</groupId>
+            <artifactId>classutil_2.10</artifactId>
+            <version>1.0.2</version>
         </dependency>
-        -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>

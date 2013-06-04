@@ -9,7 +9,6 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.channel.ChannelPipelineFactory
 import io.viper.core.server.router._
 import java.util
-import collection.immutable
 import collection.mutable.ListBuffer
 
 
@@ -49,7 +48,7 @@ object NestServer
 
   def run(localhostPort: Int)(f:(RestServer) => Unit) {
     val handler = new RestServer {
-      def addRoutes {
+      def addRoutes() {
         f(this)
       }
     }
@@ -73,7 +72,7 @@ class NestServer(val port: Int = 80) extends DelayedInit {
 
   override def delayedInit(body: => Unit) {
     _server = new RestServer {
-      def addRoutes {
+      def addRoutes() {
         body
       }
     }
@@ -83,7 +82,6 @@ class NestServer(val port: Int = 80) extends DelayedInit {
     val handler = new RouteHandler {
       def exec(args: util.Map[String, String]) = f(args)
     }
-    immutable.List() map {idx => idx}
     server.addRoute(new GetRoute(route, handler))
   }
   def put(route: String)(f:(util.Map[String, String]) => RouteResponse) {
@@ -133,7 +131,7 @@ class MultiHostServer(port: Int = 80) {
 
   def run() {
     try {
-      runners.foreach(_.start)
+      runners.foreach(_.start())
       runners.foreach{ runner =>
         val viperServer = runner.create
         viperServer.resourceInstance = runner.getClass
@@ -142,7 +140,7 @@ class MultiHostServer(port: Int = 80) {
       create(getMaxContentLength, port, server)
       Thread.currentThread.join()
     } finally {
-      runners.foreach(_.stop)
+      runners.foreach(_.stop())
     }
   }
 
@@ -164,7 +162,7 @@ class MultiHostServer(port: Int = 80) {
 
   def route(hostname: String, resourcePath: String, f:(RestServer) => Unit) {
     _server.putRoute(hostname, port, new ViperServer(resourcePath) {
-      override def addRoutes { f(this) }
+      override def addRoutes() { f(this) }
     })
   }
 

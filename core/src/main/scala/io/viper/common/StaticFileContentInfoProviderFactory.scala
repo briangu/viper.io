@@ -8,8 +8,8 @@ object StaticFileContentInfoProviderFactory
 {
   var _enableCache = true
 
-  def enableCache(flag: Boolean) {
-    _enableCache = flag
+  def enableCache(enabled: Boolean) {
+    _enableCache = enabled
   }
 
   def create(clazz: Class[_], resourcePath: String): FileContentInfoProvider = {

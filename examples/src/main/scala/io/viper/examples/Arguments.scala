@@ -3,10 +3,10 @@ package io.viper.examples
 
 import _root_.io.viper.core.server.router._
 import io.viper.common.{NestServer, RestServer}
-import java.util.Map
 import org.json.JSONObject
-import collection.mutable.HashMap
-import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpVersion, DefaultHttpResponse, HttpResponse}
+import org.jboss.netty.handler.codec.http.HttpResponseStatus
+import java.util
+import scala.collection.mutable
 
 /**
  * Demonstrate basic REST resource CRUD operations using arguments
@@ -18,14 +18,14 @@ import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpVersion, Defa
 object Arguments {
 
   // NOT thread-safe, just for demo purposes
-  val mem = new HashMap[String, String]
+  val mem = new mutable.HashMap[String, String]
 
   def main(args: Array[String]) {
     NestServer.run(8080, new RestServer {
-      def addRoutes {
+      def addRoutes() {
 
         get("/mem/$key", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
+          def exec(args: util.Map[String, String]): RouteResponse = {
             val key = args.get("key")
             mem.get(key) match {
               case Some(value) => keyResponse(key, value)
@@ -35,7 +35,7 @@ object Arguments {
         })
 
         delete("/mem/$key", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
+          def exec(args: util.Map[String, String]): RouteResponse = {
             val key = args.get("key")
             mem.remove(key) match {
               case Some(value) => keyResponse(key, value)
@@ -45,7 +45,7 @@ object Arguments {
         })
 
         put("/mem", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
+          def exec(args: util.Map[String, String]): RouteResponse = {
             val (key, value) = getParams(args)
             if (mem.contains(key)) {
               mem.put(key, value)
@@ -57,7 +57,7 @@ object Arguments {
         })
 
         post("/mem", new RouteHandler {
-          def exec(args: Map[String, String]): RouteResponse = {
+          def exec(args: util.Map[String, String]): RouteResponse = {
             val (key, value) = getParams(args)
             mem.put(key, value)
             keyResponse(key, value)
@@ -69,7 +69,7 @@ object Arguments {
 
   // TODO: we should fail with a 400 if we don't have the args we need
   //       the platform should take care of validating this
-  def getParams(args: Map[String, String]) : (String, String) = {
+  def getParams(args: util.Map[String, String]) : (String, String) = {
     if (!args.containsKey("key")) throw new RuntimeException("missing param: key")
     if (!args.containsKey("value")) throw new RuntimeException("missing param: value")
 
