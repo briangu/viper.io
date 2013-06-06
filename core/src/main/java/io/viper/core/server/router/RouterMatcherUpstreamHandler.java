@@ -2,11 +2,23 @@ package io.viper.core.server.router;
 
 
 import io.viper.core.server.StatusResponseHandler;
+
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.util.CharsetUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
 public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
@@ -77,5 +89,34 @@ public class RouterMatcherUpstreamHandler extends SimpleChannelUpstreamHandler
         p.replace(_handlerName, _handlerName, handler);
       }
     }
+  }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+    throws Exception
+  {
+    Channel ch = e.getChannel();
+    Throwable cause = e.getCause();
+    if (cause instanceof TooLongFrameException)
+    {
+      sendError(ctx, BAD_REQUEST);
+      return;
+    }
+
+    cause.printStackTrace();
+    if (ch.isConnected())
+    {
+      sendError(ctx, INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  protected void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
+  {
+    HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
+    response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
+    response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
+
+    // Close the connection as soon as the error message is sent.
+    ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
   }
 }
