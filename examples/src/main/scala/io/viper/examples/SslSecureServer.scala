@@ -16,11 +16,11 @@ object SslSecureServerExample {
     }
 
     val keyStore = new FileKeyStoreManager(keyStorePath, password, password)
-    val server = new SslSecureServer("sslhelloworld.com", keyStore)
+    val server = new SslSecureServer("signing.com", "res:///signin/", keyStore)
     NestServer.run(8080, server)
   }
 }
 
-class SslSecureServer(hostname: String, keyStoreManager: KeyStoreManager) extends SSLServer(hostname, keyStoreManager) {
+class SslSecureServer(hostname: String, resource: String, keyStoreManager: KeyStoreManager) extends SSLServer(hostname, resource, keyStoreManager) {
   get("/hello", { args => Response("world") })
 }
