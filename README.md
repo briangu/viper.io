@@ -1,13 +1,15 @@
 viper.io
 ========
 
-Viper.io is an http powertool written on top of Netty.  It's designed to simplify:
+Viper.io is a rapid prototyping toolkit on top of Netty.  It's grown from many hackweeks/days and is remarkably easy to use to quickly build HTTP servers:
 
-* Uploading and downloading of files directly to/from S3 using Netty
-* Read-only websites (splash or product pages)
-* REST application development (e.g., client-side templates that consume JSON)
-* Dynamic thumbnail generation from images
 * Virtual hosting (host multiple domains from the same process)
+* container-like jar loading for virtual servers
+* serve websites from jar resources (read-only websites, such as splash or product pages)
+* easy REST application development (biased towards data-driven clients via JSON)
+* SSL server support
+* Uploading and downloading of files directly to/from S3 using Netty
+* thin layer over Netty making it easy to extend
 
 Maven
 -----
@@ -20,6 +22,8 @@ Maven
 
 Example
 -------
+
+Check the examples src for more.
 
 Hello World:
 
