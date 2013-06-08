@@ -23,4 +23,7 @@ object SslSecureServerExample {
 
 class SslSecureServer(hostname: String, resource: String, keyStoreManager: KeyStoreManager) extends SSLServer(hostname, resource, keyStoreManager) {
   get("/hello", { args => Response("world") })
+  post("/login", { args =>
+    Response("hello")
+  })
 }

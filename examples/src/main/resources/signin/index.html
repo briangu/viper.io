@@ -54,19 +54,19 @@
     <!-- Fav and touch icons -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-144-precomposed.png">
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-114-precomposed.png">
-      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-72-precomposed.png">
-                    <link rel="apple-touch-icon-precomposed" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-57-precomposed.png">
-                                   <link rel="shortcut icon" href="http://twitter.github.io/bootstrap/assets/ico/favicon.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="http://twitter.github.io/bootstrap/assets/ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="http://twitter.github.io/bootstrap/assets/ico/favicon.png">
   </head>
 
   <body>
 
     <div class="container">
 
-      <form class="form-signin">
+      <form class="form-signin" id="form-signin" action="/login" method="POST">
         <h2 class="form-signin-heading">Please sign in</h2>
-        <input type="text" class="input-block-level" placeholder="Email address">
-        <input type="password" class="input-block-level" placeholder="Password">
+        <input type="text" class="input-block-level" placeholder="Email address" name="user_email">
+        <input type="password" class="input-block-level" placeholder="Password" name="user_password">
         <label class="checkbox">
           <input type="checkbox" value="remember-me"> Remember me
         </label>
@@ -80,6 +80,11 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-  
+    <script src="/js/main.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            appMain();
+        });
+    </script>
 
 </body></html>
