@@ -1,9 +1,8 @@
 package io.viper.core.server.router;
 
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.*;
-
-import java.io.UnsupportedEncodingException;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.HttpVersion;
 
 public class StatusResponse extends RouteResponse
 {
